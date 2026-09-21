@@ -10,6 +10,7 @@ Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.m
   - [AI](#ai)
 - [Getting started](#getting-started)
   - [Prerequisites](#prerequisites)
+  - [Dependencies](#dependencies)
   - [Limitations](#limitations)
   - [Install from the PowerShell Gallery](#install-from-the-powershell-gallery)
   - [How to use it](#how-to-use-it)
@@ -35,6 +36,13 @@ I want to be as transparent as possible about this. AI is used as an assisting t
 - Basic knowledge of MSAL is recommended.  
   [Overview of the Microsoft Authentication Library (MSAL) | MS Learn](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview)  
   [Microsoft Authentication Library for .NET](https://learn.microsoft.com/en-us/entra/msal/dotnet/)
+
+## Dependencies
+This module bundles [Microsoft.Identity.Client](https://www.nuget.org/packages/Microsoft.Identity.Client) (MSAL.NET) as its underlying token-acquisition library, along with its required dependency assemblies.
+- Microsoft.Identity.Client -> Core
+- Microsoft.IdentityModel.Abstractions -> Core dependency
+
+Since Microsoft.Identity.Client targets different .NET runtimes for PowerShell 5.1 (Desktop) vs PowerShell 7.x (Core), the binaries are bundled per-runtime under `src/lib/` and the correct set is loaded automatically at import time based on `$PSEdition` — no manual step required.
 
 ## Limitations
 This Module only supports minimal ways to get a MSAL token. For more complex tasks I recommend looking into other projects like:
