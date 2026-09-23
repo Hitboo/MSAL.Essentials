@@ -34,8 +34,10 @@ I want to be as transparent as possible about this. AI is used as an assisting t
 ## Prerequisites
 -  PowerShell 5.1 or 7.x
 - Basic knowledge of MSAL is recommended.  
-  [Overview of the Microsoft Authentication Library (MSAL) | MS Learn](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview)  
-  [Microsoft Authentication Library for .NET](https://learn.microsoft.com/en-us/entra/msal/dotnet/)
+  Some sources I used:
+  - [Overview of the Microsoft Authentication Library (MSAL) | MS Learn](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview)
+  - [Microsoft Authentication Library for .NET](https://learn.microsoft.com/en-us/entra/msal/dotnet/)
+  - [No Passwords, No Problem: Secure Azure Authentication with MSAL & PowerShell - Ben Reader - PSC](https://youtu.be/UgdhicrPn9c?si=Ult04oswPESN4sTX)
 
 ## Dependencies
 This module bundles [Microsoft.Identity.Client](https://www.nuget.org/packages/Microsoft.Identity.Client) (MSAL.NET) as its underlying token-acquisition library, along with its required dependency assemblies.
