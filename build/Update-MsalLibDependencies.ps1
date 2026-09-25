@@ -41,7 +41,7 @@ function Update-MsalLibDependencies {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
     $Packages = @(
-        #'Microsoft.IdentityModel.Abstractions',
+        'Microsoft.IdentityModel.Abstractions',
         'Microsoft.Identity.Client'
     )
 
