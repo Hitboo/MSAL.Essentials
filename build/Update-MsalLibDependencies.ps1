@@ -41,8 +41,8 @@ function Update-MsalLibDependencies {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
     $Packages = @(
-        'Microsoft.Identity.Client',
-        'Microsoft.IdentityModel.Abstractions'
+        #'Microsoft.IdentityModel.Abstractions',
+        'Microsoft.Identity.Client'
     )
 
     $manifestPath = Join-Path -Path $LibPath -ChildPath 'dependencies.json'
