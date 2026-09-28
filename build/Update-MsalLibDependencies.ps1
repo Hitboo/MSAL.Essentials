@@ -149,6 +149,10 @@ function Update-MsalLibDependencies {
             foreach ($target in $Targets) {
                 $destDir = Join-Path -Path $LibRoot -ChildPath $target.Name
                 New-Item -Force -ItemType 'Directory' -Path $destDir | Out-Null
+                Get-ChildItem -Path $destDir -Filter '*.dll' | ForEach-Object {
+                    # Clean up any old DLLs from previous versions before copying the new ones.
+                    Remove-Item -Path $_.FullName -Force
+                }
 
                 $copiedAny = $false
 
@@ -180,7 +184,11 @@ function Update-MsalLibDependencies {
             }
 
             $manifest[$packageId] = $resolvedVersion
-            Write-Host ('{0} updated to {1}.' -f $packageId, $resolvedVersion)
+            if ($currentVersion -eq $resolvedVersion) {
+                Write-Host ('{0} fetched version {1}.' -f $packageId, $resolvedVersion)
+            } else {
+                Write-Host ('{0} updated from version {1} to {2}.' -f $packageId, $currentVersion, $resolvedVersion)
+            }
         }
         finally {
             Remove-Item -Recurse -Force -Path $tempRoot -ErrorAction 'SilentlyContinue'
