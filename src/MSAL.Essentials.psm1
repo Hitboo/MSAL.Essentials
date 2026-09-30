@@ -5,6 +5,31 @@
 $DllFolder = if ($PSEdition -eq 'Core') { 'netstandard2.0' } else { 'net472' }
 $LibPath   = Join-Path -Path $PSScriptRoot -ChildPath ('lib\{0}' -f $DllFolder)
 
+# Windows PowerShell (and, less often, pwsh) hosts have no app.config with
+# assembly binding redirects, so the CLR requires an EXACT assembly version
+# match by default. The DLLs under lib\ are a NuGet-resolved graph, and it's
+# normal for one package's compiled reference (e.g. System.Text.Json wanting
+# System.Memory 4.0.1.1) to not exactly match the version NuGet actually
+# resolved for the whole graph (e.g. System.Memory 4.0.1.2). Both files are
+# already shipped in lib\ - this handler only redirects a version-mismatched
+# lookup to the file that's already there. It never downloads or fetches
+# anything; it is a pure offline fallback and only runs when the CLR's
+# normal loading has already failed.
+$script:MsalEssentialsAssemblyResolveHandler = [System.ResolveEventHandler] {
+    param($resolveSender, $resolveArgs)
+
+    $requestedAssemblyName = [System.Reflection.AssemblyName]::new($resolveArgs.Name)
+    $candidateDllPath = Join-Path -Path $LibPath -ChildPath ('{0}.dll' -f $requestedAssemblyName.Name)
+
+    if (Test-Path -Path $candidateDllPath) {
+        return [System.Reflection.Assembly]::LoadFrom($candidateDllPath)
+    }
+
+    return $null
+}
+
+[System.AppDomain]::CurrentDomain.add_AssemblyResolve($script:MsalEssentialsAssemblyResolveHandler)
+
 # Add-Type cannot unload an assembly from a running session. Re-importing this module
 # with -Force would otherwise throw "type already exists" errors on the second run,
 # so skip anything that's already loaded.
