@@ -4,6 +4,13 @@ Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.m
 - Application permissions (certificate or secret)
 - Managed Identity
 
+> [!NOTE]
+> **👋 First open source project**  
+> This is my first open source project and my first time building a PowerShell module.
+> It is also my first time using [Pester](https://pester.dev/) for testing, and I'm experimenting
+> with LLM-assisted development along the way. Expect rough edges.  
+> **Feedback is very welcome**: issues, suggestions, code review and PRs are all appreciated.
+
 # Table of contents<!-- omit from toc -->
 - [Disclaimer](#disclaimer)
   - [This module is NOT supported by Microsoft](#this-module-is-not-supported-by-microsoft)
