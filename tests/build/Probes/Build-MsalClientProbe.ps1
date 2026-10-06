@@ -75,29 +75,25 @@ try {
         ErrorMessage = $null
     } | ConvertTo-Json -Compress
 }
-catch [System.Reflection.ReflectionTypeLoadException] {
-    $loaderExceptionMessages = $_.Exception.LoaderExceptions |
-        ForEach-Object -Process { $_.Message } |
-        Select-Object -Unique
-
-    [pscustomobject]@{
-        Success      = $false
-        ClientId     = $null
-        ErrorMessage = ($loaderExceptionMessages -join ' | ')
-    } | ConvertTo-Json -Compress
-}
 catch {
-    $exceptionMessages = New-Object -TypeName 'System.Collections.Generic.List[string]'
-    $currentException  = $_.Exception
+    $messages         = New-Object -TypeName 'System.Collections.Generic.List[string]'
+    $currentException = $_.Exception
 
     while ($currentException) {
-        $exceptionMessages.Add($currentException.Message)
+        $messages.Add($currentException.Message)
+
+        if ($currentException -is [System.Reflection.ReflectionTypeLoadException]) {
+            foreach ($loaderException in $currentException.LoaderExceptions) {
+                if ($loaderException) { $messages.Add(('LoaderException: {0}' -f $loaderException.Message)) }
+            }
+        }
+
         $currentException = $currentException.InnerException
     }
 
     [pscustomobject]@{
         Success      = $false
         ClientId     = $null
-        ErrorMessage = ($exceptionMessages -join ' -> ')
+        ErrorMessage = (($messages | Select-Object -Unique) -join ' -> ')
     } | ConvertTo-Json -Compress
 }
