@@ -8,6 +8,11 @@
         Folder or file to run. Defaults to the tests\ folder this script
         lives in, so every *.Tests.ps1 under it is discovered.
 
+    .PARAMETER Verbosity
+        Pester console output verbosity: None, Minimal, Normal, Detailed or
+        Diagnostic. Defaults to Detailed. Also passed on to the child
+        processes when -AllEditions is used.
+
     .PARAMETER AllEditions
         Re-launches this script once under powershell (5.1) and once under
         pwsh (7), each as a clean child process. Exits non-zero if either
@@ -23,13 +28,22 @@
         Runs only the tests under tests\Build.
 
     .EXAMPLE
-        .\tests\Start-Test.ps1 -AllEditions
-        Runs the full suite in both Windows PowerShell 5.1 and PowerShell 7.
+        .\tests\Start-Test.ps1 -Verbosity Normal
+        Runs the full suite with less console output.
+
+    .EXAMPLE
+        .\tests\Start-Test.ps1 -AllEditions -Verbosity Minimal
+        Runs the full suite in both Windows PowerShell 5.1 and PowerShell 7,
+        with minimal output.
 #>
 [CmdletBinding()]
 param(
     # Folder or file to run. Defaults to everything under tests/
     [string]$TestsPath = $PSScriptRoot,
+
+    # Pester console output verbosity
+    [ValidateSet('None', 'Minimal', 'Normal', 'Detailed', 'Diagnostic')]
+    [string]$Verbosity = 'Detailed',
 
     # Re-run this script in Windows PowerShell 5.1 and in PowerShell 7
     [switch]$AllEditions
@@ -55,6 +69,7 @@ if ($AllEditions) {
             '-ExecutionPolicy', 'Bypass'
             '-File', $PSCommandPath
             '-TestsPath', $TestsPath
+            '-Verbosity', $Verbosity
         ) -Wait -PassThru -NoNewWindow
 
         if ($childProcess.ExitCode -ne 0) {
@@ -85,7 +100,7 @@ Import-Module -Name 'Pester' -MinimumVersion $minimumPesterVersion -Force
 Write-Host ('Running on {0} {1} with Pester {2}' -f $PSVersionTable.PSEdition, $PSVersionTable.PSVersion, (Get-Module -Name 'Pester').Version)
 
 $pesterConfiguration = New-PesterConfiguration
-$pesterConfiguration.Run.Path                    = $TestsPath
-$pesterConfiguration.Run.Exit                    = $true
-$pesterConfiguration.Output.Verbosity            = 'Detailed'
+$pesterConfiguration.Run.Path         = $TestsPath
+$pesterConfiguration.Run.Exit         = $true
+$pesterConfiguration.Output.Verbosity = $Verbosity
 Invoke-Pester -Configuration $pesterConfiguration
