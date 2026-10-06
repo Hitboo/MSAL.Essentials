@@ -1,19 +1,27 @@
 <#
     .SYNOPSIS
-        Fetches Microsoft.Identity.Client (and its full transitive dependency
-        graph) via nuget.exe and places the DLLs under src\lib\<framework>\,
-        for both Windows PowerShell 5.1 (net472) and PowerShell 7 (netstandard2.0).
+        Fetches Microsoft.Identity.Client and its full, correctly-resolved
+        transitive dependency graph, and places the DLLs under
+        src\lib\<target>\ for Windows PowerShell 5.1 (net472) and
+        PowerShell 7+ (netstandard2.0).
+
+    .DESCRIPTION
+        Resolution is done by NuGet's real restore engine (via `dotnet build`
+        on a throwaway project), once per target framework. That gives:
+          - only the dependency group that applies to that TFM
+          - the package versions NuGet itself resolves (what the packages
+            declare they need), not "latest of everything"
+          - the right lib\<tfm> asset picked per package
+
+        Requires the .NET SDK (`dotnet`) on the machine running this script.
 
     .EXAMPLE
         . .\build\Update-MsalLibDependencies.ps1
-        Update-MsalLibDependencies
+        Update-MsalLibDependencies -Force
 
     .EXAMPLE
-        # Pin to a specific version instead of latest (e.g. to avoid the
-        # dependency chain introduced in 4.45.0+)
         Update-MsalLibDependencies -Version 4.43.1 -Force
 #>
-
 
 function Get-LatestNuGetPackageVersion {
     [CmdletBinding()]
@@ -30,28 +38,40 @@ function Get-LatestNuGetPackageVersion {
         Select-Object -Last 1
 }
 
-function Resolve-PackageLibDir {
-    # Finds the best-matching lib\<framework> folder inside an installed package,
-    # walking down a compatibility fallback chain.
+function Test-LibAssemblyReferences {
+    # Loads every DLL in a target folder in a throwaway child process and
+    # checks that every assembly's compiled references match, version for
+    # version, what's physically on disk. Must run via the SAME host that will
+    # load this folder (powershell.exe for net472, pwsh.exe for netstandard2.0);
+    # pwsh supplies its own copies of many of these assemblies from the .NET
+    # shared framework, so checking net472 files through pwsh gives false results.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]
-        $PackageLibPath,
+        $LibFolderPath,
 
         [Parameter(Mandatory)]
-        [string[]]
-        $FrameworkFallbackOrder
+        [ValidateSet('powershell', 'pwsh')]
+        [string]
+        $HostExecutableName
     )
 
-    foreach ($framework in $FrameworkFallbackOrder) {
-        $candidate = Join-Path -Path $PackageLibPath -ChildPath $framework
-        if (Test-Path -Path $candidate) {
-            return $candidate
-        }
+    $resolvedHostCommand = Get-Command -Name $HostExecutableName -ErrorAction 'SilentlyContinue'
+    if (-not $resolvedHostCommand) {
+        Write-Warning ('{0} is not installed on this machine - skipping the reference check for {1}.' -f $HostExecutableName, $LibFolderPath)
+        return @()
     }
 
-    return $null
+    $resultLines = & $resolvedHostCommand.Source -NoProfile -NonInteractive -File (Join-Path -Path $psscriptRoot -ChildPath 'Probes\Update-MsalLibDependenciesProbe.ps1') -LibFolderPath $LibFolderPath
+    $resultJson  = $resultLines | Out-String
+
+    if ([string]::IsNullOrWhiteSpace($resultJson)) {
+        return @()
+    }
+
+    $parsedResult = $resultJson | ConvertFrom-Json
+    return @($parsedResult.Mismatches) | Where-Object -FilterScript { $_ }
 }
 
 function Update-MsalLibDependencies {
@@ -60,16 +80,18 @@ function Update-MsalLibDependencies {
         [string]
         $LibRoot = (Join-Path -Path $PSScriptRoot -ChildPath '..\src\lib'),
 
-        # One nuget.exe install covers every target below - the downloaded
-        # package already contains all of its lib\<tfm> folders, so we just
-        # copy from a different one per target instead of re-downloading.
+        # Name = output folder under $LibRoot, Tfm = the target framework
+        # NuGet resolves the dependency graph for.
         [hashtable[]]
         $Targets = @(
-            @{ Name = 'net472';         FallbackOrder = @('net472', 'net471', 'net47', 'net462', 'net461', 'net46', 'netstandard2.0') } # Windows PowerShell 5.1
-            @{ Name = 'netstandard2.0'; FallbackOrder = @('netstandard2.0', 'net6.0', 'net5.0') }                                        # PowerShell 7+ (pwsh)
+            @{ Name = 'net472';         Tfm = 'net472';         HostExe = 'powershell' } # Windows PowerShell 5.1
+            @{ Name = 'netstandard2.0'; Tfm = 'netstandard2.0'; HostExe = 'pwsh' }       # PowerShell 7+
         ),
 
-        # Pin a specific version (e.g. '4.43.1'). Omit to use the latest stable release.
+        [string]
+        $PackageId = 'Microsoft.Identity.Client',
+
+        # Pin a specific version (e.g. '4.43.1'). Default: latest stable.
         [string]
         $Version,
 
@@ -83,117 +105,149 @@ function Update-MsalLibDependencies {
     # NuGet's endpoints require TLS 1.2+; Windows PowerShell 5.1 doesn't always default to it.
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # Download the NuGet CLI if it's not already present in the build folder.
-    $NugetExePath = Join-Path -Path $PSScriptRoot -ChildPath 'nuget.exe'
-    if (-not (Test-Path -Path $NugetExePath)) {
-        Write-Host 'nuget.exe not found - downloading...'
-        Invoke-WebRequest -Uri 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe' -OutFile $NugetExePath
+    if (-not (Get-Command -Name 'dotnet' -ErrorAction 'SilentlyContinue')) {
+        throw 'The .NET SDK (dotnet) is required to resolve the dependency graph. Install it from https://dot.net and re-run.'
     }
 
-    # Only the top-level package needs to be listed here - nuget.exe install resolves
-    # and downloads the whole dependency tree (Microsoft.IdentityModel.Abstractions,
-    # System.Text.Json, System.Buffers, System.Memory, etc.) automatically.
-    $Packages = @(
-        'Microsoft.Identity.Client'
-    )
+    New-Item -Force -ItemType 'Directory' -Path $LibRoot | Out-Null
 
+    # Manifest (built by hand from ConvertFrom-Json; -AsHashtable isn't in 5.1)
     $manifestPath = Join-Path -Path $LibRoot -ChildPath 'dependencies.json'
-    $manifest     = if (Test-Path -Path $manifestPath) {
-        Add-Type -AssemblyName 'System.Web.Extensions'
-        $serializer = New-Object -TypeName 'System.Web.Script.Serialization.JavaScriptSerializer'
-        $serializer.Deserialize((Get-Content -Path $manifestPath -Raw), [System.Collections.Hashtable])
-    } else {
-        @{}
+    $manifest     = [ordered]@{}
+
+    if (Test-Path -Path $manifestPath) {
+        $manifestContent = Get-Content -Path $manifestPath -Raw
+        if (-not [string]::IsNullOrWhiteSpace($manifestContent)) {
+            $manifestObject = ConvertFrom-Json -InputObject $manifestContent
+            foreach ($property in $manifestObject.PSObject.Properties) {
+                $manifest[$property.Name] = $property.Value
+            }
+        }
     }
 
-    foreach ($packageId in $Packages) {
-        $resolvedVersion = if ($PSBoundParameters.ContainsKey('Version') -and $Version) {
-            $Version
-        } else {
-            Get-LatestNuGetPackageVersion -PackageId $packageId
-        }
+    $resolvedVersion = if ($PSBoundParameters.ContainsKey('Version') -and $Version) {
+        $Version
+    } else {
+        Get-LatestNuGetPackageVersion -PackageId $PackageId
+    }
 
-        $currentVersion = $manifest[$packageId]
+    $currentVersion = $manifest[$PackageId]
 
-        if (-not $Force -and $currentVersion -eq $resolvedVersion) {
-            Write-Host ('{0} already up to date ({1}).' -f $packageId, $currentVersion)
-            continue
-        }
+    if (-not $Force -and $currentVersion -eq $resolvedVersion) {
+        Write-Host ('{0} already up to date ({1}).' -f $PackageId, $currentVersion)
+        return
+    }
 
-        if (-not $PSCmdlet.ShouldProcess($packageId, ('Update from ''{0}'' to ''{1}''' -f $currentVersion, $resolvedVersion))) {
-            continue
-        }
+    if (-not $PSCmdlet.ShouldProcess($PackageId, ('Update from ''{0}'' to ''{1}''' -f $currentVersion, $resolvedVersion))) {
+        return
+    }
 
-        $tempRoot = Join-Path -Path $env:TEMP -ChildPath ('nuget-fetch-{0}' -f (Get-Random))
-        New-Item -Force -ItemType 'Directory' -Path $tempRoot | Out-Null
+    $resolvedByTarget = [ordered]@{}
+
+    foreach ($target in $Targets) {
+        $workDir = Join-Path -Path $env:TEMP -ChildPath ('msal-fetch-{0}-{1}' -f $target.Name, (Get-Random))
+        $outDir  = Join-Path -Path $workDir -ChildPath 'out'
+        New-Item -Force -ItemType 'Directory' -Path $outDir | Out-Null
 
         try {
-            & $NugetExePath install $packageId `
-                -Version $resolvedVersion `
-                -Source $NuGetSource `
-                -OutputDirectory $tempRoot `
-                -ExcludeVersion `
-                -NonInteractive `
-                -Verbosity 'quiet'
+            $projectName = 'MsalFetch'
+            $projectPath = Join-Path -Path $workDir -ChildPath ('{0}.csproj' -f $projectName)
 
+            # Empty library project whose only job is to make NuGet resolve the
+            # graph for ONE target framework and copy the runtime assets locally.
+            $projectXml = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$($target.Tfm)</TargetFramework>
+    <OutputType>Library</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="$PackageId" Version="$resolvedVersion" />
+  </ItemGroup>
+</Project>
+"@
+            Set-Content -Path $projectPath -Value $projectXml -Encoding 'UTF8'
+
+            $buildOutput = & dotnet build $projectPath -c Release -o $outDir --nologo -v q "-p:RestoreSources=$NuGetSource" 2>&1
             if ($LASTEXITCODE -ne 0) {
-                throw ('nuget.exe install failed for {0} {1} (exit code {2})' -f $packageId, $resolvedVersion, $LASTEXITCODE)
+                throw ('dotnet build failed for {0} {1} on {2} (exit {3}):{4}{5}' -f $PackageId, $resolvedVersion, $target.Tfm, $LASTEXITCODE, [Environment]::NewLine, ($buildOutput | Out-String))
             }
 
-            $installedPackages = Get-ChildItem -Path $tempRoot -Directory
+            # Everything except the empty project's own assembly.
+            $dlls = @(Get-ChildItem -Path $outDir -Filter '*.dll' -File |
+                Where-Object -FilterScript { $_.BaseName -ne $projectName })
 
-            if (-not $installedPackages) {
-                throw ('nuget.exe reported success but no packages were found under {0}' -f $tempRoot)
+            if ($dlls.Count -eq 0) {
+                throw ('No DLLs were produced for {0} {1} on {2} - check {3}' -f $PackageId, $resolvedVersion, $target.Tfm, $workDir)
             }
 
-            foreach ($target in $Targets) {
-                $destDir = Join-Path -Path $LibRoot -ChildPath $target.Name
-                New-Item -Force -ItemType 'Directory' -Path $destDir | Out-Null
-                Get-ChildItem -Path $destDir -Filter '*.dll' | ForEach-Object {
-                    # Clean up any old DLLs from previous versions before copying the new ones.
-                    Remove-Item -Path $_.FullName -Force
-                }
-
-                $copiedAny = $false
-
-                foreach ($installedPackage in $installedPackages) {
-                    $pkgLibRoot = Join-Path -Path $installedPackage.FullName -ChildPath 'lib'
-
-                    if (-not (Test-Path -Path $pkgLibRoot)) {
-                        continue # e.g. build-only/analyzer-only packages have no lib\ folder
-                    }
-
-                    $sourceDir = Resolve-PackageLibDir -PackageLibPath $pkgLibRoot -FrameworkFallbackOrder $target.FallbackOrder
-
-                    if (-not $sourceDir) {
-                        Write-Warning ('No compatible build found for {0} under target ''{1}'' ({2}) - skipping.' -f $installedPackage.Name, $target.Name, ($target.FallbackOrder -join ', '))
-                        continue
-                    }
-
-                    Get-ChildItem -Path $sourceDir -Filter '*.dll' | ForEach-Object {
-                        Copy-Item -Path $_.FullName -Destination $destDir -Force
-                        $copiedAny = $true
-                    }
-                }
-
-                if (-not $copiedAny) {
-                    throw ('No DLLs were copied for {0} {1} under target ''{2}'' - check {3} manually.' -f $packageId, $resolvedVersion, $target.Name, $tempRoot)
-                }
-
-                Write-Host ('  -> {0}: copied to {1}' -f $target.Name, $destDir)
+            # Record exactly which package versions NuGet resolved (for the log + manifest)
+            $assetsPath = Join-Path -Path $workDir -ChildPath 'obj\project.assets.json'
+            if (Test-Path -Path $assetsPath) {
+                $assets   = Get-Content -Path $assetsPath -Raw | ConvertFrom-Json
+                $tfmGraph = @($assets.targets.PSObject.Properties)[0].Value
+                $resolvedByTarget[$target.Name] = @(
+                    $tfmGraph.PSObject.Properties |
+                        Where-Object -FilterScript { $_.Value.PSObject.Properties['runtime'] } |
+                        ForEach-Object -Process { $_.Name }
+                )
             }
 
-            $manifest[$packageId] = $resolvedVersion
-            if ($currentVersion -eq $resolvedVersion) {
-                Write-Host ('{0} fetched version {1}.' -f $packageId, $resolvedVersion)
-            } else {
-                Write-Host ('{0} updated from version {1} to {2}.' -f $packageId, $currentVersion, $resolvedVersion)
+            # Only now that the build succeeded do we touch the destination.
+            $destDir = Join-Path -Path $LibRoot -ChildPath $target.Name
+            New-Item -Force -ItemType 'Directory' -Path $destDir | Out-Null
+            Get-ChildItem -Path $destDir -Filter '*.dll' | Remove-Item -Force
+            $dlls | Copy-Item -Destination $destDir -Force
+
+            Write-Host ('{0}: {1} DLL(s) copied to {2}' -f $target.Name, $dlls.Count, $destDir)
+            foreach ($entry in $resolvedByTarget[$target.Name]) {
+                Write-Host ('    {0}' -f $entry)
             }
         }
         finally {
-            Remove-Item -Recurse -Force -Path $tempRoot -ErrorAction 'SilentlyContinue'
+            Remove-Item -Recurse -Force -Path $workDir -ErrorAction 'SilentlyContinue'
         }
     }
 
-    $manifest | ConvertTo-Json | Set-Content -Path $manifestPath
+    # Fresh manifest: the old per-dependency keys no longer apply.
+    $newManifest = [ordered]@{ $PackageId = $resolvedVersion; Resolved = $resolvedByTarget }
+    $newManifest | ConvertTo-Json -Depth 5 | Set-Content -Path $manifestPath
+
+    if ($currentVersion -eq $resolvedVersion) {
+        Write-Host ('{0} re-fetched at version {1}.' -f $PackageId, $resolvedVersion)
+    } else {
+        Write-Host ('{0} updated from version {1} to {2}.' -f $PackageId, $currentVersion, $resolvedVersion)
+    }
+
+    # Reference check, once, at the end.
+    foreach ($target in $Targets) {
+        $destDir = Join-Path -Path $LibRoot -ChildPath $target.Name
+        if (-not (Test-Path -Path $destDir)) {
+            continue
+        }
+
+        $mismatches = Test-LibAssemblyReferences -LibFolderPath $destDir -HostExecutableName $target.HostExe
+
+        if ($mismatches) {
+            if ($target.HostExe -eq 'powershell') {
+                Write-Warning ('Assembly version mismatches found in {0}:' -f $destDir)
+                foreach ($mismatch in $mismatches) {
+                    Write-Warning ('  {0}' -f $mismatch)
+                }
+                Write-Warning 'Windows PowerShell has no binding redirects, so these need the module''s AssemblyResolve fallback.'
+            }
+            else {
+                Write-Host ('Note: {0} difference(s) reported for {1} are expected - pwsh supplies many of these assemblies from the .NET shared framework.' -f @($mismatches).Count, $destDir)
+            }
+        }
+        else {
+            Write-Host ('No assembly version mismatches found in {0}.' -f $destDir)
+        }
+    }
 }
