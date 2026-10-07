@@ -99,7 +99,9 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
             $ClientID
         ).WithAuthority(
             ('https://login.microsoftonline.com/{0}' -f $TenantId)
-        ).WithDefaultRedirectUri().Build()
+        ).WithRedirectUri(
+            'http://localhost' # Loopback redirect, required for the system browser. WithDefaultRedirectUri(): it picks a default that depends on the platform.
+        ).Build()
 
         Write-Verbose -Message ('Waiting up to {0} seconds for sign-in to complete in the default browser.' -f $TimeoutSeconds)
 
