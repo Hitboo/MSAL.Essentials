@@ -86,9 +86,9 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         $Scopes = @('https://graph.microsoft.com/.default'),
 
         [Parameter()]
-        [ValidateRange(10, 3600)]
+        [ValidateRange(1, 3600)]
         [int]
-        $TimeoutSeconds = 300
+        $TimeoutSeconds = 120
     )
 
     # Cancels the pending sign-in once the timeout elapses. Disposed in finally.
@@ -177,6 +177,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         $mfaHint         = 'A Conditional Access policy requires additional verification. Sign in again and complete the MFA prompt, or ask your administrator which policy applies.'
         $deviceHint      = 'A Conditional Access policy requires a managed, compliant or domain-joined device. Run this from a device that meets the policy, or ask your administrator.'
 
+        # https://learn.microsoft.com/en-us/entra/identity-platform/reference-error-codes
         $knownAadstsErrors = @{
             '50011'  = @{ Category = 'AppConfiguration';  Hint = $redirectUriHint }
             '500113' = @{ Category = 'AppConfiguration';  Hint = $redirectUriHint }
