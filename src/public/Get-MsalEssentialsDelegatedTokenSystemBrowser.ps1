@@ -50,8 +50,8 @@
 
     .PARAMETER TimeoutSeconds
         How long to wait for the interactive sign-in to complete before
-        giving up. Defaults to 300 seconds (5 minutes). Allowed range is
-        10 to 3600 seconds.
+        giving up. Defaults to 120 seconds (2 minutes). Allowed range is
+        1 to 3600 seconds.
 
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read'
