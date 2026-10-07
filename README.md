@@ -62,4 +62,33 @@ This Module only supports minimal ways to get a MSAL token. For more complex tas
 N/A
 
 ## How to use it
-N/A
+```powershell
+#Requires -Modules @{ ModuleName='MSAL.Essentials'; ModuleVersion='0.1.0' } 
+#region settings
+# The directory (tenant) ID or verified domain to authenticate against.
+[string]$TenantId = 'EXAMPLE.onmicrosoft.com'
+# The application (client) ID registered in Entra ID.
+[string]$ClientID = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line # Permission scopes to request.
+#endregion settings
+
+#region connect to Microsoft Graph via MSAL.Essentials
+try {
+    # Get MSAL token via interactive system browser. The token is cached in memory for the duration of the PowerShell session.
+    $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientID $clientId -ErrorAction 'Stop'
+
+    $MicrosoftGraphRequest = @{
+        Uri         = 'https://graph.microsoft.com/beta/me' # Microsoft Graph endpoint to get info about the signed-in user.
+        Method      = 'GET'
+        Headers     = @{ Authorization = $MsalEssentialsConnection.CreateAuthorizationHeader() } # Use the MSAL token to authorize the request.
+        ContentType = 'application/json'
+    }
+
+    # Invoke Microsoft Graph request using the MSAL token.
+    $MicrosoftGraphResult = Invoke-RestMethod @MicrosoftGraphRequest
+    $microsoftGraphResult
+}
+catch {
+    Write-Warning -Message $_.ErrorDetails.Message
+}
+#endregion connect to Microsoft Graph via MSAL.Essentials
+```
