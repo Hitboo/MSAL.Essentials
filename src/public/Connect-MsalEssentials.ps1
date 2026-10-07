@@ -7,10 +7,12 @@
         Signs in as the current user through the system's default web browser
         (delegated rights) by calling
         Get-MsalEssentialsDelegatedTokenSystemBrowser, then stores the result
-        in module scope so other MSAL.Essentials functions can use it.
+        and the MSAL client in module scope so Get-MsalEssentialsToken can
+        renew the token silently later.
 
         Nothing is written to disk. Running Connect-MsalEssentials again
-        replaces the stored connection.
+        replaces the stored connection. Re-importing the module (Import-Module
+        -Force) also clears it.
 
         Errors from the sign-in are passed through unchanged, including the
         FullyQualifiedErrorId values (MsalEssentials.Timeout,
@@ -32,8 +34,8 @@
         The application (client) ID registered in Entra ID.
 
     .PARAMETER Scopes
-        The delegated scopes to request. If omitted, the default of
-        Get-MsalEssentialsDelegatedTokenSystemBrowser is used.
+        The delegated scopes to request. Defaults to Microsoft Graph's default
+        scope set. The same scopes are used when the token is renewed.
 
     .PARAMETER TimeoutSeconds
         How long to wait for the interactive sign-in to complete. If omitted,
@@ -43,7 +45,8 @@
         Returns the connection as an object with the properties
         AuthenticationType, TenantId, ClientId, Username, Scopes, ExpiresOn
         and AccessToken, plus a CreateAuthorizationHeader() method that
-        returns 'Bearer <token>'.
+        returns 'Bearer <token>'. This is the same object
+        Get-MsalEssentialsToken returns.
 
         The access token is a credential. It is hidden from the default
         console display, but Format-List *, ConvertTo-Json, Export-Clixml and
@@ -89,9 +92,11 @@ function Connect-MsalEssentials {
         [string]
         $ClientID,
 
+        # Keep this default in sync with Get-MsalEssentialsDelegatedTokenSystemBrowser.
+        # It is needed here because the scopes are stored for silent token renewal.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [string[]]
-        $Scopes,
+        $Scopes = @('https://graph.microsoft.com/.default'),
 
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [int]
@@ -102,22 +107,28 @@ function Connect-MsalEssentials {
         $PassThru
     )
 
-    $authenticationResult = $null
-    $authenticationType   = $null
+    $authenticationResult    = $null
+    $authenticationType      = $null
+    $publicClientApplication = $null
+    $requestedScopes         = $null
 
     switch ($PSCmdlet.ParameterSetName) {
         'DelegatedSystemBrowser' {
+            $requestedScopes = [string[]]@($Scopes)
+
             $tokenParameters = @{
-                TenantId = $TenantId
-                ClientID = $ClientID
+                TenantId             = $TenantId
+                ClientID             = $ClientID
+                Scopes               = $requestedScopes
+                # Receives the MSAL client. Silent renewal needs the same client
+                # instance, because the refresh token lives in its in-memory cache.
+                ApplicationReference = [ref]$publicClientApplication
             }
 
-            # Only pass optional parameters that were actually supplied, so the
-            # defaults live in one place (the helper function).
-            foreach ($optionalParameterName in 'Scopes', 'TimeoutSeconds') {
-                if ($PSBoundParameters.ContainsKey($optionalParameterName)) {
-                    $tokenParameters[$optionalParameterName] = $PSBoundParameters[$optionalParameterName]
-                }
+            # Only pass the timeout if it was supplied, so its default lives in
+            # one place (the helper function).
+            if ($PSBoundParameters.ContainsKey('TimeoutSeconds')) {
+                $tokenParameters['TimeoutSeconds'] = $TimeoutSeconds
             }
 
             $authenticationType = 'Delegated'
@@ -133,8 +144,8 @@ function Connect-MsalEssentials {
             }
         }
 
-        # Future parameter sets go here, each setting $authenticationResult and
-        # $authenticationType the same way:
+        # Future parameter sets go here, each setting $authenticationResult,
+        # $authenticationType and $requestedScopes the same way:
         #   'AppCertificate'  -> client credentials with a certificate
         #   'AccessToken'     -> use an access token that was obtained elsewhere
         #   'ManagedIdentity' -> managed identity endpoint
@@ -150,20 +161,21 @@ function Connect-MsalEssentials {
         $PSCmdlet.ThrowTerminatingError($noTokenRecord)
     }
 
-    $username = if ($authenticationResult.Account) { $authenticationResult.Account.Username } else { $null }
-
-    # Module-scope state. Kept as plain values plus the MSAL result. The raw
+    # Module-scope state. Only the values that cannot be derived are stored;
+    # username, scopes and expiry are read from AuthenticationResult, so they
+    # stay correct after a silent renewal replaces it. The raw
     # AuthenticationResult is never returned from this function (see the note
     # in the helper about printing the full AuthenticationResult).
     $script:MsalEssentialsSession = @{
-        AuthenticationType   = $authenticationType
-        TenantId             = $authenticationResult.TenantId
-        ClientId             = $ClientID
-        Username             = $username
-        Scopes               = @($authenticationResult.Scopes)
-        ExpiresOn            = $authenticationResult.ExpiresOn
-        AuthenticationResult = $authenticationResult
+        AuthenticationType      = $authenticationType
+        TenantId                = $TenantId # as supplied, reused if a new sign-in is needed
+        ClientId                = $ClientID
+        RequestedScopes         = $requestedScopes
+        PublicClientApplication = $publicClientApplication
+        AuthenticationResult    = $authenticationResult
     }
+
+    $username = if ($authenticationResult.Account) { $authenticationResult.Account.Username } else { $null }
 
     Write-Verbose -Message (
         'Connected as {0} ({1}), token expires {2}.' -f
@@ -173,38 +185,6 @@ function Connect-MsalEssentials {
     )
 
     if ($PassThru) {
-        # A small object made only of strings, a string array and a date, so it
-        # is safe to print, unlike the full MSAL AuthenticationResult.
-        $connection = [pscustomobject]@{
-            PSTypeName         = 'MsalEssentials.Connection'
-            AuthenticationType = $authenticationType
-            TenantId           = $authenticationResult.TenantId
-            ClientId           = $ClientID
-            Username           = $username
-            Scopes             = @($authenticationResult.Scopes)
-            ExpiresOn          = $authenticationResult.ExpiresOn
-            AccessToken        = $authenticationResult.AccessToken
-        }
-
-        # Same method name MSAL's AuthenticationResult has, so existing code
-        # that calls CreateAuthorizationHeader() keeps working.
-        $connection | 
-            Add-Member -MemberType 'ScriptMethod' -Name 'CreateAuthorizationHeader' -Value {
-                'Bearer {0}' -f $this.AccessToken
-            }
-
-        # Keep the token out of the default console display. It is still a
-        # normal property, so $connection.AccessToken works.
-        $defaultDisplayProperties = [System.Management.Automation.PSPropertySet]::new(
-            'DefaultDisplayPropertySet',
-            [string[]]@('AuthenticationType', 'TenantId', 'ClientId', 'Username', 'Scopes', 'ExpiresOn')
-        )
-        $standardMembers = [System.Management.Automation.PSMemberSet]::new(
-            'PSStandardMembers',
-            [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayProperties)
-        )
-        $connection.PSObject.Members.Add($standardMembers)
-
-        $connection
+        ConvertTo-MsalEssentialsConnection -Session $script:MsalEssentialsSession
     }
 }
