@@ -76,6 +76,10 @@ try {
     # Get MSAL token via interactive system browser. The token is cached in memory for the duration of the PowerShell session.
     $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientID $clientId -ErrorAction 'Stop'
 
+    # If the request might happen later or takes longer, make sure to have a valid token.
+    # The Get-MsalEssentialsToken tries to get a new token silently if the expire time is less then 15 minutes by default.
+    $MsalEssentialsConnection = Get-MsalEssentialsToken
+
     $MicrosoftGraphRequest = @{
         Uri         = 'https://graph.microsoft.com/beta/me' # Microsoft Graph endpoint to get info about the signed-in user.
         Method      = 'GET'
