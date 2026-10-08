@@ -8,7 +8,9 @@
 
 BeforeDiscovery {
     $script:ExpectedCommands = @(
-        'Get-MsalEssentialsDelegatedTokenSystemBrowser'
+        'Connect-MsalEssentials',
+        'Get-MsalEssentialsToken',
+        'Disconnect-MsalEssentials'
     )
 }
 
