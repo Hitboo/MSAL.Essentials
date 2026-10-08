@@ -5,12 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Table of contents<!-- omit from toc -->
+
 - [\[0.1.0\] - 2026-10-08](#010---2026-10-08)
   - [TL;DR](#tldr)
   - [Added](#added)
-
-
-<hr>
 
 ## [0.1.0] - 2026-10-08
 
@@ -42,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Get-MsalEssentialsDelegatedTokenSystemBrowser`: interactive delegated sign-in through the system browser, using the loopback redirect URI `http://localhost`.
     - `-TimeoutSeconds` (default 120, range 1 to 3600) stops waiting for a sign-in that never completes.
     - `-ApplicationReference` hands back the MSAL client so the token can be renewed silently later.
- - `ConvertTo-MsalEssentialsConnection`: builds the `MsalEssentials.Connection` object returned by `Connect-MsalEssentials -PassThru` and `Get-MsalEssentialsToken`, so both commands return the same object.
+  - `ConvertTo-MsalEssentialsConnection`: builds the `MsalEssentials.Connection` object returned by `Connect-MsalEssentials -PassThru` and `Get-MsalEssentialsToken`, so both commands return the same object.
     - The object holds only strings, a string array and a date, so it is safe to print, unlike the full MSAL `AuthenticationResult`.
     - Values are read from the session's current token, so they stay correct after a silent renewal.
     - `AccessToken` is hidden from the default console display but stays a normal property. `Format-List *`, `ConvertTo-Json` and `Export-Clixml` still include it.

@@ -1,11 +1,11 @@
-## Branching model
+# Branching model
 
 This repository should have these branches:
 
-  * `main`    - used for production releases - was formerly called 'master'
-  * `develop` - used as an integration branch - all feature-branches
+- `main`    - used for production releases - was formerly called 'master'
+- `develop` - used as an integration branch - all feature-branches
 
-```
+```text
 -----o------------------o-------------o------ main
       \                /             /
       o---o---o---o---o-------o-----o-------- develop
@@ -39,10 +39,10 @@ If you're working on an issue it's a good idea to reference the issue-number wit
 
 For example, when working on a feature-request, that asks to implement a sidebar, you should name the branch:
 
-    feature/issue-0004-add-side-navigation
+```text
+feature/issue-0004-add-side-navigation
+```
 
 So it's easy to see which branch addresses which issue.
-
-<hr>
 
 [Back to README](/README.md)
