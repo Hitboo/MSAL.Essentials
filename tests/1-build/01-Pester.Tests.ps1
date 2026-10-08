@@ -11,7 +11,7 @@ BeforeAll {
         Select-Object -First 1 -ExpandProperty 'Version'
 }
 
-Describe 'Pester version' -Tag 'Build' {
+Describe 'Pester version' {
 
     It 'is loaded in this session' {
         $script:loadedPesterModules | Should -Not -BeNullOrEmpty

@@ -24,8 +24,8 @@
         Runs the full suite in the current session's edition.
 
     .EXAMPLE
-        .\tests\Start-Test.ps1 -TestsPath .\tests\Build
-        Runs only the tests under tests\Build.
+        .\tests\Start-Test.ps1 -TestsPath .\tests\1-build
+        Runs only the tests under tests\1-build.
 
     .EXAMPLE
         .\tests\Start-Test.ps1 -Verbosity Normal

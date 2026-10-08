@@ -44,7 +44,7 @@ BeforeAll {
     )
 }
 
-Describe ('dependencies.json matches the DLLs in lib/{0} (current edition: {1})' -f $currentFrameworkFolderName, $PSVersionTable.PSEdition) -Tag 'Build' {
+Describe ('dependencies.json matches the DLLs in lib/{0} (current edition: {1})' -f $currentFrameworkFolderName, $PSVersionTable.PSEdition) {
     It 'lists at least one package' {
         $script:packageEntries.Count |
             Should -BeGreaterThan 0
@@ -67,7 +67,7 @@ Describe ('dependencies.json matches the DLLs in lib/{0} (current edition: {1})'
     }
 }
 
-Describe ('the module can be re-imported, builds an MSAL client, and starts a connection attempt (current edition: {0})' -f $PSVersionTable.PSEdition) -Tag 'Build' {
+Describe ('the module can be re-imported, builds an MSAL client, and starts a connection attempt (current edition: {0})' -f $PSVersionTable.PSEdition) {
     BeforeAll {
         # Recomputed here rather than read from a BeforeDiscovery variable,
         # so this Describe doesn't depend on cross-phase scope sharing -
