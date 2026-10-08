@@ -94,5 +94,10 @@ try {
 catch {
     Write-Warning -Message $_.ErrorDetails.Message
 }
+finally {
+  # Clean up once done
+  Disconnect-MsalEssentials
+  Remove-Variable -Name 'MsalEssentialsConnection'
+}
 #endregion connect to Microsoft Graph via MSAL.Essentials
 ```
