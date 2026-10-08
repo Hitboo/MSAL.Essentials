@@ -53,6 +53,12 @@
         giving up. Defaults to 120 seconds (2 minutes). Allowed range is
         1 to 3600 seconds.
 
+    .PARAMETER ApplicationReference
+        Optional. A [ref] variable that receives the MSAL client application
+        used for the sign-in. Keep it to renew the token silently later:
+        AcquireTokenSilent needs the same client instance, because the
+        refresh token lives in its in-memory cache.
+
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read'
         Opens the default browser for sign-in and returns the resulting token.
@@ -60,6 +66,11 @@
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -TimeoutSeconds 60
         Gives up after 60 seconds if sign-in has not completed.
+
+    .EXAMPLE
+        $publicClientApplication = $null
+        $token = Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -ApplicationReference ([ref]$publicClientApplication)
+        Returns the token and also stores the MSAL client in $publicClientApplication.
 
     .EXAMPLE
         try {
@@ -88,13 +99,19 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         [Parameter()]
         [ValidateRange(1, 3600)]
         [int]
-        $TimeoutSeconds = 120
+        $TimeoutSeconds = 120,
+
+        [Parameter()]
+        [ref]
+        $ApplicationReference
     )
 
     # Cancels the pending sign-in once the timeout elapses. Disposed in finally.
     $timeoutSource = [System.Threading.CancellationTokenSource]::new([System.TimeSpan]::FromSeconds($TimeoutSeconds))
 
     try {
+        #region Build the MSAL client
+
         $publicClientApplication = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create(
             $ClientID
         ).WithAuthority(
@@ -103,7 +120,17 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
             'http://localhost' # Loopback redirect, required for the system browser. WithDefaultRedirectUri(): it picks a default that depends on the platform.
         ).Build()
 
+        #endregion Build the MSAL client
+
+        # Hand the client back to the caller, if asked, so it can renew the
+        # token silently later. Only useful to the caller if sign-in succeeds.
+        if ($ApplicationReference) {
+            $ApplicationReference.Value = $publicClientApplication
+        }
+
         Write-Verbose -Message ('Waiting up to {0} seconds for sign-in to complete in the default browser.' -f $TimeoutSeconds)
+
+        #region Acquire the token interactively
 
         # $false routes sign-in to the system browser via a local loopback
         # listener instead of drawing a popup inside this process - this is
@@ -129,8 +156,14 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         # properties can still carry the same kind of depth. Every value below is
         # drilled down to an actual string/bool/datetime leaf, never a nested object.
         return $authenticationResult
+
+        #endregion Acquire the token interactively
     }
     catch {
+        #region exception handling
+        # Note: In most cases it is the timeout and the browser does not return the actual error.
+        #       This is just a best effort to provide a more user friendly error message and more insights.
+
         # PowerShell wraps exceptions thrown by a directly-called .NET method
         # (like GetResult() here) in a MethodInvocationException, so the
         # real MSAL exception (e.g. MsalClientException, MsalServiceException)
@@ -283,6 +316,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         $errorRecord.ErrorDetails = [System.Management.Automation.ErrorDetails]::new(($detailLines -join [System.Environment]::NewLine))
 
         $PSCmdlet.ThrowTerminatingError($errorRecord)
+        #endregion exception handling
     }
     finally {
         $timeoutSource.Dispose()
