@@ -101,6 +101,11 @@ function Get-MsalEssentialsToken {
                     $session.AuthenticationResult = $session.PublicClientApplication.AcquireTokenSilent(
                         [string[]]$session.RequestedScopes,
                         $session.AuthenticationResult.Account
+                    ).WithForceRefresh(
+                        $true 
+                        # ForceRefresh is needed to get a new token. 
+                        # Otherwise MSAL only returns a token if the expiration is less than 5 minutes away, which is not enough for this function.
+                        # See https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=msal-dotnet-latest#remarks
                     ).ExecuteAsync().GetAwaiter().GetResult()
                 }
                 catch {
