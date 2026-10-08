@@ -64,17 +64,20 @@ N/A
 ## How to use it
 ```powershell
 #Requires -Modules @{ ModuleName='MSAL.Essentials'; ModuleVersion='0.1.0' } 
-#region settings
+
+#region Settings
 # The directory (tenant) ID or verified domain to authenticate against.
 [string]$TenantId = 'EXAMPLE.onmicrosoft.com'
 # The application (client) ID registered in Entra ID.
-[string]$ClientID = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line # Permission scopes to request.
-#endregion settings
+[string]$ClientID = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line
+# Permission scopes to request. '.default' works in most cases.
+[string[]]$Scopes = @('https://graph.microsoft.com/.default')
+#endregion Settings
 
-#region connect to Microsoft Graph via MSAL.Essentials
+#region Connect to Microsoft Graph via MSAL.Essentials
 try {
     # Get MSAL token via interactive system browser. The token is cached in memory for the duration of the PowerShell session.
-    $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientID $clientId -ErrorAction 'Stop'
+    $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $TenantId -ClientID $ClientID -Scopes $Scopes -ErrorAction 'Stop'
 
     # If the request might happen later or takes longer, make sure to have a valid token.
     # The Get-MsalEssentialsToken tries to get a new token silently if the expire time is less then 15 minutes by default.
@@ -92,12 +95,12 @@ try {
     $microsoftGraphResult
 }
 catch {
-    Write-Warning -Message $_.ErrorDetails.Message
+    Write-Warning -Message $_
 }
 finally {
-  # Clean up once done
-  Disconnect-MsalEssentials
-  Remove-Variable -Name 'MsalEssentialsConnection'
+    # Clean up once done
+    Disconnect-MsalEssentials
+    Remove-Variable -Name 'MsalEssentialsConnection'
 }
-#endregion connect to Microsoft Graph via MSAL.Essentials
+#endregion Connect to Microsoft Graph via MSAL.Essentials
 ```
