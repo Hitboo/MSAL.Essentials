@@ -31,14 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Functions (public)**
   - `Connect-MsalEssentials`: signs in as the current user through the system's default browser (delegated rights) and keeps the connection in module scope for the PowerShell session. Nothing is written to disk.
     - `-PassThru` returns the connection: `AuthenticationType`, `TenantId`, `ClientId`, `Username`, `Scopes`, `ExpiresOn` and `AccessToken`, plus a `CreateAuthorizationHeader()` method. The token is hidden from the default console display.
+    - `-RedirectUri` is passed on to the sign-in, so the default and the validation live in one place.
     - Parameter sets are prepared for future app (certificate, token) and managed identity connections.
   - `Get-MsalEssentialsToken`: returns the connection with a valid token. A token that expires within `-RefreshBeforeExpiryMinutes` (default 15) is renewed silently, without opening a browser.
     - It never signs in by itself. Without a connection, or when the token has expired and cannot be renewed silently, it fails and asks you to run `Connect-MsalEssentials`.
     - If renewal fails but the current token is still valid, the current token is returned together with a warning.
   - `Disconnect-MsalEssentials`: clears the accounts and tokens from the MSAL client's cache and removes the stored connection. It shows a hint to remove variables that still hold the token.
 - **Helper functions (private)**
-  - `Get-MsalEssentialsDelegatedTokenSystemBrowser`: interactive delegated sign-in through the system browser, using the loopback redirect URI `http://localhost`.
+  - `Get-MsalEssentialsDelegatedTokenSystemBrowser`: interactive delegated sign-in through the system browser, using a loopback redirect URI (default `http://localhost`).
     - `-TimeoutSeconds` (default 120, range 1 to 3600) stops waiting for a sign-in that never completes.
+    - `-RedirectUri` (default `http://localhost`) sets the redirect URI MSAL listens on, for example a fixed port such as `http://localhost:1234`. It must be well-formed and absolute, and it must be registered on the app registration under *Mobile and desktop applications*. Entra ID ignores the port when matching a localhost URI, but the path must match exactly, including letter case. Only loopback addresses work with the system browser.
     - `-ApplicationReference` hands back the MSAL client so the token can be renewed silently later.
   - `ConvertTo-MsalEssentialsConnection`: builds the `MsalEssentials.Connection` object returned by `Connect-MsalEssentials -PassThru` and `Get-MsalEssentialsToken`, so both commands return the same object.
     - The object holds only strings, a string array and a date, so it is safe to print, unlike the full MSAL `AuthenticationResult`.
@@ -54,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **In most cases a failed sign-in surfaces as `MsalEssentials.Timeout`.** Entra ID shows many errors (for example a redirect URI that is not registered, or a Conditional Access block) on its own page in the browser and does not send them back to PowerShell, so MSAL keeps waiting until the timeout. The timeout message lists the usual causes, but the actual error and its AADSTS code are only visible on the page in the browser. The other categories apply when Entra ID does return the error, for example a declined consent or a claims challenge.
   - `$_.Exception` is still the original MSAL exception and `$_.TargetObject` carries `Category`, `AadstsCode`, `ErrorCode`, `CorrelationId` and `Claims`.
   - The connection commands add `MsalEssentials.NotConnected`, `MsalEssentials.ReconnectRequired`, `MsalEssentials.RenewalNotSupported` and `MsalEssentials.NoToken`.
+  - A redirect URI that MSAL rejects as not being a loopback address is reported as `MsalEssentials.AppConfiguration`, with a hint to use a loopback address.
+  - The redirect URI hints name the URI that was actually used, so they tell you exactly what to register on the app.
 - **Bundled MSAL libraries** in `src/lib` for Windows PowerShell 5.1 (`net472`) and PowerShell 7 (`netstandard2.0`): `Microsoft.Identity.Client` 4.90.1 and its dependencies, with the versions pinned in `dependencies.json`.
   - `build/Update-MsalLibDependencies.ps1` updates the bundled libraries and checks that the references between the DLLs match.
 - **Tests** (Pester 6.2.0 or later) and the runner `tests/Start-Test.ps1`:
