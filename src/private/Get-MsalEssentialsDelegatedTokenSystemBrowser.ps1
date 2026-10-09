@@ -53,6 +53,33 @@
         giving up. Defaults to 120 seconds (2 minutes). Allowed range is
         1 to 3600 seconds.
 
+    .PARAMETER RedirectUri
+        The redirect URI MSAL listens on. Defaults to 'http://localhost'.
+
+        It must be registered on the app registration (Entra admin center >
+        App registrations > your app > Authentication > Add a platform >
+        Mobile and desktop applications).
+
+        Entra ID ignores the port when it matches a localhost redirect URI, so
+        registering 'http://localhost' also covers 'http://localhost:1234'.
+        Do not register several localhost URIs that differ only by port. The
+        path is matched and is case-sensitive: 'http://localhost/MyApp' must
+        be registered exactly like that. Use different paths to tell several
+        localhost registrations apart.
+
+        The system browser flow needs a loopback address, because MSAL listens
+        on it. MSAL's documentation only describes 'http://localhost' and
+        'http://localhost:<port>'. A path, '127.0.0.1' (recommended by Entra
+        over 'localhost', but it can only be added through the app manifest)
+        and 'https://localhost' are valid on the Entra side but are not
+        described in MSAL's documentation, so test them first. '[::1]' is not
+        supported by Entra ID. Addresses that are not loopback are rejected by
+        MSAL with an "Only loopback redirect uri is supported" error and need
+        a different sign-in flow, such as the embedded web view or WAM, which
+        this module does not include.
+
+        https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#localhost-exceptions
+
     .PARAMETER ApplicationReference
         Optional. A [ref] variable that receives the MSAL client application
         used for the sign-in. Keep it to renew the token silently later:
@@ -66,6 +93,10 @@
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -TimeoutSeconds 60
         Gives up after 60 seconds if sign-in has not completed.
+
+    .EXAMPLE
+        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -RedirectUri 'http://localhost:1234'
+        Listens on the fixed port 1234. 'http://localhost:1234' must be registered on the app.
 
     .EXAMPLE
         $publicClientApplication = $null
@@ -102,6 +133,16 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         $TimeoutSeconds = 120,
 
         [Parameter()]
+        [ValidateScript({
+            if (-not [System.Uri]::IsWellFormedUriString($_, [System.UriKind]::Absolute)) {
+                throw ("'{0}' is not a valid absolute URI. Use a loopback address such as 'http://localhost' or 'http://localhost:1234'." -f $_)
+            }
+            $true
+        })]
+        [string]
+        $RedirectUri = 'http://localhost',
+
+        [Parameter()]
         [ref]
         $ApplicationReference
     )
@@ -117,7 +158,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         ).WithAuthority(
             ('https://login.microsoftonline.com/{0}' -f $TenantId)
         ).WithRedirectUri(
-            'http://localhost' # Loopback redirect, required for the system browser. WithDefaultRedirectUri(): it picks a default that depends on the platform.
+            $RedirectUri # Loopback redirect, required for the system browser. WithDefaultRedirectUri(): it picks a default that depends on the platform.
         ).Build()
 
         #endregion Build the MSAL client
@@ -128,7 +169,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
             $ApplicationReference.Value = $publicClientApplication
         }
 
-        Write-Verbose -Message ('Waiting up to {0} seconds for sign-in to complete in the default browser.' -f $TimeoutSeconds)
+        Write-Verbose -Message ('Waiting up to {0} seconds for sign-in to complete in the default browser (redirect URI {1}).' -f $TimeoutSeconds, $RedirectUri)
 
         #region Acquire the token interactively
 
@@ -208,7 +249,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         # Known Entra ID error codes -> category and what to do about it.
         # Not exhaustive: anything not listed falls through to the generic
         # handling below and still reports the original message.
-        $redirectUriHint = "Add 'http://localhost' (no port) as a redirect URI on the app registration: Entra admin center > App registrations > your app > Authentication > Add a platform > Mobile and desktop applications. MSAL picks a random port at runtime; Entra ignores the port for http://localhost."
+        $redirectUriHint = ("Register '{0}' as a redirect URI on the app registration: Entra admin center > App registrations > your app > Authentication > Add a platform > Mobile and desktop applications. Entra ID ignores the port for localhost addresses, but the rest of the URI, including the path and its letter case, must match exactly." -f $RedirectUri)
         $mfaHint         = 'A Conditional Access policy requires additional verification. Sign in again and complete the MFA prompt, or ask your administrator which policy applies.'
         $deviceHint      = 'A Conditional Access policy requires a managed, compliant or domain-joined device. Run this from a device that meets the policy, or ask your administrator.'
 
@@ -265,6 +306,11 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         elseif ($aadstsCode -and $knownAadstsErrors.ContainsKey($aadstsCode)) {
             $category = $knownAadstsErrors[$aadstsCode].Category
             $hint     = $knownAadstsErrors[$aadstsCode].Hint
+        }
+        elseif ($errorCode -eq 'loopback_redirect_uri' -or $caughtException.Message -match 'loopback redirect uri') {
+            # MSAL rejects the redirect URI before any browser is opened.
+            $category = 'AppConfiguration'
+            $hint     = ("The system browser sign-in only supports a loopback redirect URI such as 'http://localhost' or 'http://localhost:1234'; '{0}' is not supported. Use -RedirectUri with a loopback address and register the same URI on the app registration." -f $RedirectUri)
         }
         elseif ($claims) {
             # A claims challenge means a policy needs a stronger or different

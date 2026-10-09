@@ -263,6 +263,14 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             (Get-MsalEssentialsToken).AccessToken |
                 Should -Be 'second-access-token'
         }
+
+        It 'passes -RedirectUri to the sign-in' {
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -RedirectUri 'http://localhost:1234/app'
+
+            Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
+                $RedirectUri -eq 'http://localhost:1234/app'
+            }
+        }
     }
 
     Context 'Get-MsalEssentialsToken' {

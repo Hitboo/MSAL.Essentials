@@ -41,6 +41,31 @@
         How long to wait for the interactive sign-in to complete. If omitted,
         the default of Get-MsalEssentialsDelegatedTokenSystemBrowser is used.
 
+    .PARAMETER RedirectUri
+        The redirect URI MSAL listens on. Defaults to 'http://localhost'.
+
+        It must be registered on the app registration (Entra admin center >
+        App registrations > your app > Authentication > Add a platform >
+        Mobile and desktop applications).
+
+        Entra ID ignores the port when it matches a localhost redirect URI, so
+        registering 'http://localhost' also covers 'http://localhost:1234'.
+        Do not register several localhost URIs that differ only by port. The
+        path is matched and is case-sensitive: 'http://localhost/MyApp' must
+        be registered exactly like that. Use different paths to tell several
+        localhost registrations apart.
+
+        The system browser flow needs a loopback address, because MSAL listens
+        on it. MSAL's documentation only describes 'http://localhost' and
+        'http://localhost:<port>'. A path, '127.0.0.1' (recommended by Entra
+        over 'localhost', but it can only be added through the app manifest)
+        and 'https://localhost' are valid on the Entra side but are not
+        described in MSAL's documentation, so test them first. '[::1]' is not
+        supported by Entra ID. Addresses that are not loopback are rejected by
+        MSAL with an "Only loopback redirect uri is supported" error and need
+        a different sign-in flow, such as the embedded web view or WAM, which
+        this module does not include.
+
     .PARAMETER PassThru
         Returns the connection as an object with the properties
         AuthenticationType, TenantId, ClientId, Username, Scopes, ExpiresOn
@@ -59,6 +84,10 @@
     .EXAMPLE
         Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read' -TimeoutSeconds 60 -PassThru
         Requests only User.Read, gives up after 60 seconds, and returns the connection.
+
+    .EXAMPLE
+        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -RedirectUri 'http://localhost:1234'
+        Listens on the fixed port 1234. 'http://localhost:1234' must be registered on the app.
 
     .EXAMPLE
         try {
@@ -102,6 +131,11 @@ function Connect-MsalEssentials {
         [int]
         $TimeoutSeconds,
 
+        # No default and no validation here: both live in the helper function.
+        [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
+        [string]
+        $RedirectUri,
+
         [Parameter()]
         [switch]
         $PassThru
@@ -125,10 +159,12 @@ function Connect-MsalEssentials {
                 ApplicationReference = [ref]$publicClientApplication
             }
 
-            # Only pass the timeout if it was supplied, so its default lives in
-            # one place (the helper function).
-            if ($PSBoundParameters.ContainsKey('TimeoutSeconds')) {
-                $tokenParameters['TimeoutSeconds'] = $TimeoutSeconds
+            # Only pass optional parameters that were actually supplied, so
+            # their defaults live in one place (the helper function).
+            foreach ($optionalParameterName in 'TimeoutSeconds', 'RedirectUri') {
+                if ($PSBoundParameters.ContainsKey($optionalParameterName)) {
+                    $tokenParameters[$optionalParameterName] = $PSBoundParameters[$optionalParameterName]
+                }
             }
 
             $authenticationType = 'Delegated'
