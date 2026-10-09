@@ -70,6 +70,7 @@ BeforeAll {
             SilentFailure   = $SilentFailure
             SilentCallCount = 0
             SilentScopes    = $null
+            ForceRefresh    = $null
             Accounts        = @([pscustomobject]@{ Username = 'user@hitboo.test' })
             RemovedAccounts = [System.Collections.Generic.List[object]]::new()
         }
@@ -81,6 +82,12 @@ BeforeAll {
             $this.SilentScopes = $Scopes
 
             $builder = [pscustomobject]@{ Client = $this }
+            $builder | Add-Member -MemberType 'ScriptMethod' -Name 'WithForceRefresh' -Value {
+                param ($ForceRefresh)
+
+                $this.Client.ForceRefresh = $ForceRefresh
+                $this # return the builder so the calls can be chained, like in MSAL
+            }
             $builder | Add-Member -MemberType 'ScriptMethod' -Name 'ExecuteAsync' -Value {
                 New-MsalTestTask -Client $this.Client -Work {
                     param ($Task)
@@ -298,6 +305,16 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
                 Should -BeGreaterThan $connection.ExpiresOn
             $global:MsalTest.Client.SilentCallCount |
                 Should -Be 1
+        }
+
+        It 'forces a refresh so MSAL does not return the cached token' {
+            New-MsalTestScenario -ExpiresInMinutes 10
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+
+            $null = Get-MsalEssentialsToken
+
+            $global:MsalTest.Client.ForceRefresh |
+                Should -BeTrue
         }
 
         It 'renews with the scopes the connection was created with' {
