@@ -35,21 +35,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    # Branch pushes get a suffix, so the checks to require ("Tests (PowerShell 7)" and
-    # "Tests (Windows PowerShell 5.1)") only come from pull request runs.
-    name: "Tests (${{ matrix.name }})${{ github.event_name == 'push' && ' - branch' || '' }}"
+  test-powershell-51:
+    name: "Tests (Windows PowerShell 5.1)${{ github.event_name == 'push' && ' - branch' || '' }}"
     runs-on: windows-latest
     timeout-minutes: 15
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Windows PowerShell 5.1
-            shell: powershell
-          - name: PowerShell 7
-            shell: pwsh
 
     steps:
       # To pin this action to a commit instead of a tag, copy the full commit SHA of the
@@ -62,13 +51,40 @@ jobs:
           persist-credentials: false # the tests never push, so don't leave the token in .git/config
 
       - name: Show the PowerShell version
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: $PSVersionTable | Out-String
 
       - name: Build tests (module files, libraries, import)
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: ./tests/Start-Test.ps1 -TestsPath ./tests/1-build
 
       - name: Unit tests (simulated sign-in)
-        shell: ${{ matrix.shell }}
+        shell: powershell
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
+
+  test-powershell-7:
+    name: "Tests ( PowerShell 7)${{ github.event_name == 'push' && ' - branch' || '' }}"
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      # To pin this action to a commit instead of a tag, copy the full commit SHA of the
+      # release from https://github.com/actions/checkout/releases and write it like this:
+      #   uses: actions/checkout@<full commit SHA> # v6.x.y
+      # Dependabot (see dependabot.yml) keeps pinned actions up to date.
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false # the tests never push, so don't leave the token in .git/config
+
+      - name: Show the PowerShell version
+        shell: pwsh
+        run: $PSVersionTable | Out-String
+
+      - name: Build tests (module files, libraries, import)
+        shell: pwsh
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/1-build
+
+      - name: Unit tests (simulated sign-in)
+        shell: pwsh
         run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
