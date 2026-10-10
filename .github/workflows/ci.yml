@@ -1,0 +1,74 @@
+name: CI
+
+# CI only TESTS. It never builds, packages or publishes anything and it uses no secrets.
+# Building and releasing belongs in a separate workflow that runs for version tags only.
+#
+# The integration tests (tests/3-integration) are NOT run here: they need an
+# interactive sign-in, and no credentials are stored in this repository.
+
+on:
+  # Every branch except the protected ones: tests run on each push, so a feature
+  # branch is tested before (and without) a pull request.
+  # main and dev are protected: changes only reach them through pull requests.
+  # Add more protected branches (for example release/**) to this list.
+  push:
+    branches-ignore:
+      - main
+      - dev
+
+  # Pull requests into the protected branches. These runs test the merge result.
+  # The two jobs of these runs are the status checks to require in the branch rules.
+  pull_request:
+    branches:
+      - main
+      - dev
+
+  workflow_dispatch:
+
+# Least privilege: the tests only need to read the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the older run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # Branch pushes get a suffix, so the checks to require ("Tests (PowerShell 7)" and
+    # "Tests (Windows PowerShell 5.1)") only come from pull request runs.
+    name: "Tests (${{ matrix.name }})${{ github.event_name == 'push' && ' - branch' || '' }}"
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows PowerShell 5.1
+            shell: powershell
+          - name: PowerShell 7
+            shell: pwsh
+
+    steps:
+      # To pin this action to a commit instead of a tag, copy the full commit SHA of the
+      # release from https://github.com/actions/checkout/releases and write it like this:
+      #   uses: actions/checkout@<full commit SHA> # v6.x.y
+      # Dependabot (see dependabot.yml) keeps pinned actions up to date.
+      - name: Check out the repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false # the tests never push, so don't leave the token in .git/config
+
+      - name: Show the PowerShell version
+        shell: ${{ matrix.shell }}
+        run: $PSVersionTable | Out-String
+
+      - name: Build tests (module files, libraries, import)
+        shell: ${{ matrix.shell }}
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/1-build
+
+      - name: Unit tests (simulated sign-in)
+        shell: ${{ matrix.shell }}
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
