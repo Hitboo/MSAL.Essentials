@@ -3,7 +3,7 @@
 # Load the correct pre-built assemblies for this PowerShell edition.
 # PS 7+ (Core) needs the netstandard2.0 build; Windows PowerShell 5.1 (Desktop) needs net472.
 $DllFolder = if ($PSEdition -eq 'Core') { 'netstandard2.0' } else { 'net472' }
-$LibPath   = Join-Path -Path $PSScriptRoot -ChildPath ('lib\{0}' -f $DllFolder)
+$LibPath   = Join-Path -Path $PSScriptRoot -ChildPath ('lib/{0}' -f $DllFolder)
 
 # ---------------------------------------------------------------------------
 # Dependency resolver
@@ -23,6 +23,9 @@ $LibPath   = Join-Path -Path $PSScriptRoot -ChildPath ('lib\{0}' -f $DllFolder)
 #     context can't find the assembly, so anything the .NET shared framework
 #     already provides (System.Text.Json, System.Memory, ...) always wins over
 #     the copies in lib\netstandard2.0.
+#
+# Both handlers only accept plain assembly names (no path separators), so a
+# request can never make them load a file from outside lib\.
 #
 # This is compiled C# rather than a scriptblock on purpose: the runtime can
 # raise these events on threads that have no PowerShell runspace, which would
@@ -60,7 +63,12 @@ namespace MsalEssentials
 
         private static Assembly Resolve(AssemblyLoadContext context, AssemblyName name)
         {
-            string candidate = Path.Combine(_libPath, name.Name + ".dll");
+            string simpleName = name.Name;
+
+            // Only plain assembly names: never anything that could point outside lib\.
+            if (string.IsNullOrEmpty(simpleName) || simpleName.IndexOfAny(new char[] { '\\', '/', ':' }) >= 0) { return null; }
+
+            string candidate = Path.Combine(_libPath, simpleName + ".dll");
             if (File.Exists(candidate)) { return context.LoadFromAssemblyPath(candidate); }
             return null;
         }
@@ -100,6 +108,9 @@ namespace MsalEssentials
         private static Assembly Resolve(object sender, ResolveEventArgs args)
         {
             string simpleName = new AssemblyName(args.Name).Name;
+
+            // Only plain assembly names: never anything that could point outside lib\.
+            if (string.IsNullOrEmpty(simpleName) || simpleName.IndexOfAny(new char[] { '\\', '/', ':' }) >= 0) { return null; }
 
             if (simpleName.EndsWith(".resources", StringComparison.OrdinalIgnoreCase)) { return null; }
 
@@ -148,7 +159,7 @@ foreach ($assemblyName in $EntryAssemblies) {
     $dllPath = Join-Path -Path $LibPath -ChildPath ('{0}.dll' -f $assemblyName)
 
     if (-not (Test-Path -Path $dllPath)) {
-        throw ('Required assembly not found: {0}. Run build\Update-MsalLibDependencies.ps1.' -f $dllPath)
+        throw ('Required assembly not found: {0}. The module installation is incomplete; reinstall the module. (Developers: dot-source build/Update-MsalLibDependencies.ps1 and run Update-MsalLibDependencies.)' -f $dllPath)
     }
 
     $alreadyLoaded = [System.AppDomain]::CurrentDomain.GetAssemblies() |
@@ -173,8 +184,15 @@ foreach ($assemblyName in $EntryAssemblies) {
 }
 
 # Dot-source every function file so it becomes available in this module's scope.
-$PublicFunctions  = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Public\*.ps1')  -ErrorAction SilentlyContinue)
-$PrivateFunctions = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Private\*.ps1') -ErrorAction SilentlyContinue)
+# The folder names are lowercase and use forward slashes, so this also works on
+# case-sensitive file systems.
+$PublicFunctions  = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'public/*.ps1')  -ErrorAction Stop)
+$PrivateFunctions = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'private/*.ps1') -ErrorAction Stop)
+
+# A module that silently exports nothing is worse than one that fails to import.
+if ($PublicFunctions.Count -eq 0) {
+    throw ('No public function files found in {0}. The module installation is incomplete; reinstall the module.' -f (Join-Path -Path $PSScriptRoot -ChildPath 'public'))
+}
 
 foreach ($function in @($PublicFunctions + $PrivateFunctions)) {
     try {
@@ -184,6 +202,6 @@ foreach ($function in @($PublicFunctions + $PrivateFunctions)) {
     }
 }
 
-# Only Public/ functions become part of the module's exposed surface;
-# Private/ functions stay dot-sourced but internal.
+# Only public/ functions become part of the module's exposed surface;
+# private/ functions stay dot-sourced but internal.
 Export-ModuleMember -Function $PublicFunctions.BaseName
