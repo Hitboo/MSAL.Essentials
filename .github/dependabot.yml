@@ -1,0 +1,10 @@
+version: 2
+
+updates:
+  # Keeps the actions used in .github/workflows up to date (also when they are pinned to a commit).
+  # The bundled MSAL libraries in src/lib are not covered by Dependabot; they are updated with
+  # build/Update-MsalLibDependencies.ps1.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
