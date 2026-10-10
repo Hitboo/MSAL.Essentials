@@ -1,4 +1,4 @@
-# Microsoft.Identity.Client — dependency notes
+# Microsoft.Identity.Client - dependency notes
 
 > **Current version:** 4.90.1, published on NuGet **2026-09-25** (checked 2026-10-06).  
 > Supported versions: 4.77.1 and newer. Older versions are unsupported.
