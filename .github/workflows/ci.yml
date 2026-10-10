@@ -57,7 +57,7 @@ jobs:
       #   uses: actions/checkout@<full commit SHA> # v6.x.y
       # Dependabot (see dependabot.yml) keeps pinned actions up to date.
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false # the tests never push, so don't leave the token in .git/config
 
