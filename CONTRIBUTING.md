@@ -61,10 +61,11 @@ The integration tests are interactive. They are skipped unless the environment v
 
 ## Updating the bundled libraries
 
-MSAL.NET and its dependencies are bundled in `src/lib`. Don't copy or edit DLLs by hand. Use the update script instead:
+MSAL.NET and its dependencies are bundled in `src/lib`. Don't copy or edit DLLs by hand. Use the update script instead. This needs the [.NET SDK](https://dot.net) (`dotnet`) and internet access.
 
 ```powershell
-.\build\Update-MsalLibDependencies.ps1
+. .\build\Update-MsalLibDependencies.ps1   # loads the functions
+Update-MsalLibDependencies                 # latest stable MSAL.NET; add -WhatIf to preview, -Force to re-fetch the same version
 ```
 
 Then update [`THIRD-PARTY-NOTICES.md`](/THIRD-PARTY-NOTICES.md) if the set of libraries changed, add a CHANGELOG entry, and run the tests on both PowerShell editions.
