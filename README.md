@@ -3,8 +3,8 @@
 Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview) wrapper.
 
 - Delegated permissions
-- Application permissions (certificate or secret)
-- Managed Identity
+- Application permissions (certificate or secret) **not implemented yet**
+- Managed Identity **not implemented yet**
 
 > [!NOTE]
 > **👋 First open source project**  
