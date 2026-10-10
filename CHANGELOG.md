@@ -70,5 +70,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Simulated connection tests: `Connect-MsalEssentials`, `Get-MsalEssentialsToken` (including silent renewal) and `Disconnect-MsalEssentials`, with their error cases (not connected, nothing to renew, sign-in failed). These tests **do not sign in**. The sign-in helper is mocked and the MSAL client is replaced by a fake, so they only check the module's own logic: when a token is renewed, which error is raised, and what is kept or cleared. They do not prove that a real sign-in, a real silent renewal or the Entra ID error handling work.
   - Real Entra ID integration tests: `Connect-MsalEssentials`, `Get-MsalEssentialsToken` (including real silent renewal) and `Disconnect-MsalEssentials`, plus real sign-in failure cases for unknown applications and unregistered `http://localhost` redirect URIs. These tests **do sign in and use the network**: they open the browser for a real Microsoft Entra ID sign-in and call Microsoft Graph to verify that the returned and renewed tokens are accepted. They check that a real connection and token are returned, silent renewal works, disconnect clears the connection, and Entra ID authentication errors ultimately surface as `MsalEssentials.Timeout`. They require a configured tenant and are intended to be run interactively, not unattended or in CI.
 - **Documentation**
-  - General conventions in `branching-model.md`, `commit-messages.md` and `naming-conventions.md`
-  - Notes and further information in `Microsoft.Identity.Client - dependency.md` and `MSAL - TLDR.md`
+  - General conventions in [`branching-model.md`](/docs/conventions/branching-model.md), [`commit-messages.md`](/docs/conventions/commit-messages.md) and [`naming-conventions.md`](/docs/conventions/naming-conventions.md)
+  - Notes and further information in [`Microsoft.Identity.Client-dependency.md`](/docs/notes/Microsoft.Identity.Client-dependency.md) and [`MSAL-TLDR.md`](/docs/notes/MSAL-TLDR.md)
+  - Important files
+    - [`CONTRIBUTING.md`](/CONTRIBUTING.md)
+    - [`CHANGELOG.md`](/CHANGELOG.md)
+    - [`LICENSE`](/LICENSE)
+    - [`README.md`](/README.md)
+    - [`SECURITY.md`](/SECURITY.md)
+    - [`THIRD-PARTY-NOTICES.md`](/THIRD-PARTY-NOTICES.md)
