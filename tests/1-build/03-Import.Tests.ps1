@@ -66,6 +66,14 @@ Describe 'MSAL.Essentials module files' {
     It 'Microsoft.Identity.Client.dll is present' {
         Join-Path $script:LibPath 'Microsoft.Identity.Client.dll' | Should -Exist
     }
+
+    It 'FunctionsToExport matches the files in src/public' {
+    $manifest    = Import-PowerShellDataFile -Path $script:ManifestPath
+    $publicNames = Get-ChildItem -Path (Join-Path -Path $script:SrcPath -ChildPath 'public') -Filter '*.ps1' | ForEach-Object -Process { $_.BaseName }
+
+    (($manifest.FunctionsToExport | Sort-Object) -join ',') |
+        Should -Be (($publicNames | Sort-Object) -join ',')
+}
 }
 
 Describe 'MSAL.Essentials import (in-process)' {
