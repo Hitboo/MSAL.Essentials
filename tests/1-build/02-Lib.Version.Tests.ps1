@@ -65,6 +65,13 @@ Describe ('dependencies.json matches the DLLs in lib/{0} (current edition: {1})'
                     $PackageId, $ExpectedVersion, $dllRelativePath, $fileVersionInfo.FileVersion
             )
     }
+
+    It 'the DLLs match the hashes in dependencies.json' {
+    . (Join-Path -Path $PSScriptRoot -ChildPath '../../build/Update-MsalLibDependencies.ps1')
+
+    Test-MsalLibIntegrity -LibRoot (Join-Path -Path $script:libRootPath -ChildPath '.') |
+        Should -BeNullOrEmpty
+}
 }
 
 Describe ('the module can be re-imported, builds an MSAL client, and starts a connection attempt (current edition: {0})' -f $PSVersionTable.PSEdition) {
