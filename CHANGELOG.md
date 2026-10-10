@@ -6,11 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[0.1.0\] - 2026-10-08](#010---2026-10-08)
+- [\[1.0.0\] - 2026-10-08](#100---2026-10-08)
   - [TL;DR](#tldr)
   - [Added](#added)
 
-## [0.1.0] - 2026-10-08
+## [1.0.0] - 2026-10-08
 
 ### TL;DR
 
