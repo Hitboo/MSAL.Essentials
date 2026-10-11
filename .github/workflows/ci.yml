@@ -9,19 +9,20 @@ name: CI
 on:
   # Every branch except the protected ones: tests run on each push, so a feature
   # branch is tested before (and without) a pull request.
-  # main and dev are protected: changes only reach them through pull requests.
-  # Add more protected branches (for example release/**) to this list.
+  # main and develop are protected: changes only reach them through pull requests.
+  # Add more protected branches to this list if you protect them as well.
   push:
     branches-ignore:
       - main
-      - dev
+      - develop
 
   # Pull requests into the protected branches. These runs test the merge result.
-  # The two jobs of these runs are the status checks to require in the branch rules.
+  # The two jobs of these runs are the status checks to require in the branch rules:
+  #   "Tests (Windows PowerShell 5.1)" and "Tests (PowerShell 7)"
   pull_request:
     branches:
       - main
-      - dev
+      - develop
 
   workflow_dispatch:
 
@@ -43,7 +44,7 @@ jobs:
     steps:
       # To pin this action to a commit instead of a tag, copy the full commit SHA of the
       # release from https://github.com/actions/checkout/releases and write it like this:
-      #   uses: actions/checkout@<full commit SHA> # v6.x.y
+      #   uses: actions/checkout@<full commit SHA> # v7.x.y
       # Dependabot (see dependabot.yml) keeps pinned actions up to date.
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -63,15 +64,12 @@ jobs:
         run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
 
   test-powershell-7:
-    name: "Tests ( PowerShell 7)${{ github.event_name == 'push' && ' - branch' || '' }}"
+    name: "Tests (PowerShell 7)${{ github.event_name == 'push' && ' - branch' || '' }}"
     runs-on: windows-latest
     timeout-minutes: 15
 
     steps:
-      # To pin this action to a commit instead of a tag, copy the full commit SHA of the
-      # release from https://github.com/actions/checkout/releases and write it like this:
-      #   uses: actions/checkout@<full commit SHA> # v6.x.y
-      # Dependabot (see dependabot.yml) keeps pinned actions up to date.
+      # Pin the action the same way as in the first job.
       - name: Check out the repository
         uses: actions/checkout@v7
         with:
