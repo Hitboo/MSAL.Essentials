@@ -1,24 +1,25 @@
 name: CI
 
-# CI only TESTS. It never builds, packages or publishes anything and it uses no secrets.
-# Building and releasing belongs in a separate workflow that runs for version tags only.
+# CI only TESTS and checks the branch rules. It never builds, packages or publishes
+# anything and it uses no secrets. Building and releasing belongs in a separate
+# workflow that runs for version tags only.
 #
 # The integration tests (tests/3-integration) are NOT run here: they need an
 # interactive sign-in, and no credentials are stored in this repository.
 
 on:
-  # Every branch except the protected ones: tests run on each push, so a feature
-  # branch is tested before (and without) a pull request.
-  # main and develop are protected: changes only reach them through pull requests.
-  # Add more protected branches to this list if you protect them as well.
+  # Every branch except main: tests run on each push, so a feature branch is tested
+  # before (and without) a pull request. develop is included on purpose: the maintainer
+  # may push to it directly, and those pushes should be tested too.
+  # main is left out: it never receives direct pushes, only a merged pull request from
+  # develop, and that pull request has already been tested.
   push:
     branches-ignore:
       - main
-      - develop
 
   # Pull requests into the protected branches. These runs test the merge result.
-  # The two jobs of these runs are the status checks to require in the branch rules:
-  #   "Tests (Windows PowerShell 5.1)" and "Tests (PowerShell 7)"
+  # Their jobs are the status checks to require in the branch rules:
+  #   "Tests (Windows PowerShell 5.1)", "Tests (PowerShell 7)" and, for main only, "Branch policy"
   pull_request:
     branches:
       - main
@@ -86,3 +87,27 @@ jobs:
       - name: Unit tests (simulated sign-in)
         shell: pwsh
         run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
+
+  # Enforces the branching model: main only receives a pull request from develop of this
+  # repository. GitHub rulesets can't restrict the source branch of a pull request, so this
+  # check does it. Require it in the ruleset of main only.
+  branch-policy:
+    name: Branch policy
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Only develop may be merged into main
+        env:
+          # Branch names are chosen by whoever opens the pull request. They are passed in
+          # as environment variables and never pasted into the script text.
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REPO" != "$THIS_REPO" ] || [ "$HEAD_REF" != "develop" ]; then
+            echo "::error::Only develop may be merged into main. Open the pull request against develop instead."
+            exit 1
+          fi
+          echo "OK: develop -> main"
