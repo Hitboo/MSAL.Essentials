@@ -6,5 +6,8 @@ updates:
   # build/Update-MsalLibDependencies.ps1.
   - package-ecosystem: github-actions
     directory: /
+    # Pull requests go to develop, like every other change (see docs/conventions/branching-model.md).
+    # The branch has to exist.
+    target-branch: develop
     schedule:
       interval: weekly
