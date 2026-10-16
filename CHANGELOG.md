@@ -72,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Real Entra ID integration tests: `Connect-MsalEssentials`, `Get-MsalEssentialsToken` (including real silent renewal) and `Disconnect-MsalEssentials`, plus real sign-in failure cases for unknown applications and unregistered `http://localhost` redirect URIs. These tests **do sign in and use the network**: they open the browser for a real Microsoft Entra ID sign-in and call Microsoft Graph to verify that the returned and renewed tokens are accepted. They check that a real connection and token are returned, silent renewal works, disconnect clears the connection, and Entra ID authentication errors ultimately surface as `MsalEssentials.Timeout`. They require a configured tenant and are intended to be run interactively, not unattended or in CI.
 - **Workflow**
   - `.github/workflows/ci.yml` to run checks and pester on push and pull requests.
+  - `.github\workflows\release.yml` to build the git release.
 - **Build**
   - `build/Build-Module.ps1` create the release folder `output` with all files needed for a new build/release/version.
 - **Documentation**
