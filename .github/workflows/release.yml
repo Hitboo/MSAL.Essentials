@@ -25,8 +25,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test:
-    name: Tests (both PowerShell editions)
+  # One test job per PowerShell edition, started directly in that edition's shell, exactly like ci.yml.
+  # (Start-Test.ps1 -AllEditions from a PowerShell 7 step makes the Windows PowerShell child inherit
+  # PowerShell 7's PSModulePath, which breaks the Pester installation in the child.)
+  test-powershell-51:
+    name: Tests (Windows PowerShell 5.1)
     # A manual run is only allowed on the protected branches.
     if: github.event_name == 'push' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
@@ -38,17 +41,45 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Show the PowerShell version
+        shell: powershell
+        run: $PSVersionTable | Out-String
+
+      - name: Build tests (module files, libraries, import)
+        shell: powershell
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/1-build
+
+      - name: Unit tests (simulated sign-in)
+        shell: powershell
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
+
+  test-powershell-7:
+    name: Tests (PowerShell 7)
+    if: github.event_name == 'push' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Show the PowerShell version
+        shell: pwsh
+        run: $PSVersionTable | Out-String
+
       - name: Build tests (module files, libraries, import)
         shell: pwsh
-        run: ./tests/Start-Test.ps1 -TestsPath ./tests/1-build -AllEditions
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/1-build
 
       - name: Unit tests (simulated sign-in)
         shell: pwsh
-        run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit -AllEditions
+        run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
 
   package:
     name: Build the module package
-    needs: test
+    needs: [test-powershell-51, test-powershell-7]
     runs-on: windows-latest
     timeout-minutes: 15
 
