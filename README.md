@@ -25,6 +25,8 @@ Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.m
   - [Dependencies](#dependencies)
   - [Limitations](#limitations)
   - [Install](#install)
+    - [PowerShell Gallery](#powershell-gallery)
+    - [Import it from a copy of this repository](#import-it-from-a-copy-of-this-repository)
   - [App registration](#app-registration)
   - [How to use it](#how-to-use-it)
   - [Commands](#commands)
@@ -85,7 +87,14 @@ Also good to know:
 
 ### Install
 
-The module is not published to the PowerShell Gallery yet. For now, import it from a copy of this repository:
+#### PowerShell Gallery
+
+```powershell
+Install-Module -Name 'MSAL.Essentials' -Scope CurrentUser
+Import-Module -Name 'MSAL.Essentials'
+```
+
+#### Import it from a copy of this repository
 
 ```powershell
 git clone https://github.com/Hitboo/MSAL.Essentials.git
@@ -114,8 +123,8 @@ To use another loopback address, for example a fixed port, pass `-RedirectUri 'h
 ### How to use it
 
 ```powershell
-# Not on the PowerShell Gallery yet: import the module from your copy of the repository.
-Import-Module -Name '.\MSAL.Essentials\src\MSAL.Essentials.psd1'
+# Install the module first, see "Install" above.
+Import-Module -Name 'MSAL.Essentials'
 
 #region Settings
 # The directory (tenant) ID or verified domain to authenticate against.
