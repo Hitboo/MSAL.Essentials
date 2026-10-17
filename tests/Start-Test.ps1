@@ -59,18 +59,30 @@ if ($AllEditions) {
             continue
         }
 
+        # Windows PowerShell started from PowerShell 7 would inherit PowerShell 7's PSModulePath and
+        # load the wrong PowerShellGet. Without the variable it uses its own default module paths.
+        $originalModulePath = $env:PSModulePath
+        if ($powerShellExecutable -eq 'powershell' -and $PSVersionTable.PSEdition -eq 'Core') {
+            $env:PSModulePath = $null
+        }
+
         Write-Host ('=== Running under {0} ===' -f $powerShellExecutable) -ForegroundColor 'Cyan'
 
-        # Start-Process takes the executable path as a parameter value, so no
-        # call operator (&) is needed, and -ArgumentList keeps each argument
-        # separate instead of building one string that has to be quoted correctly.
-        $childProcess = Start-Process -FilePath $resolvedCommand.Source -ArgumentList @(
-            '-NoProfile'
-            '-ExecutionPolicy', 'Bypass'
-            '-File', $PSCommandPath
-            '-TestsPath', $TestsPath
-            '-Verbosity', $Verbosity
-        ) -Wait -PassThru -NoNewWindow
+        try {
+            # Start-Process takes the executable path as a parameter value, so no
+            # call operator (&) is needed, and -ArgumentList keeps each argument
+            # separate instead of building one string that has to be quoted correctly.
+            $childProcess = Start-Process -FilePath $resolvedCommand.Source -ArgumentList @(
+                '-NoProfile'
+                '-ExecutionPolicy', 'Bypass'
+                '-File', $PSCommandPath
+                '-TestsPath', $TestsPath
+                '-Verbosity', $Verbosity
+            ) -Wait -PassThru -NoNewWindow
+        }
+        finally {
+            $env:PSModulePath = $originalModulePath
+        }
 
         if ($childProcess.ExitCode -ne 0) {
             $anyEditionFailed = $true
