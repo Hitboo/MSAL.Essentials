@@ -7,7 +7,8 @@ name: Release
 # the package, but creates no release and publishes nothing.
 #
 # Order: tests -> package -> GitHub release -> PowerShell Gallery. The Gallery step comes last
-# because a published version can't be deleted from the Gallery, only unlisted.
+# because a published version can't be deleted from the Gallery, only unlisted. It stays switched
+# off until you create the repository variable PUBLISH_TO_GALLERY with the value 'true'.
 
 on:
   push:
@@ -198,3 +199,49 @@ jobs:
             --title "$TAG" \
             --notes-file output/release-notes.md \
             "${flags[@]}"
+
+  publish-gallery:
+    name: Publish to the PowerShell Gallery
+    needs: [package, github-release]
+    # Off until the repository variable PUBLISH_TO_GALLERY is 'true'
+    # (Settings > Secrets and variables > Actions > Variables).
+    if: github.ref_type == 'tag' && vars.PUBLISH_TO_GALLERY == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    # Waits for your approval (required reviewer) and is the only job that can read the API key.
+    # Set both up in Settings > Environments > powershell-gallery.
+    environment:
+      name: powershell-gallery
+      url: https://www.powershellgallery.com/packages/MSAL.Essentials
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: module-package
+          path: output
+
+      - name: Check the package against the checksum
+        shell: pwsh
+        run: |
+          $zip      = Get-ChildItem -Path ./output -Filter 'MSAL.Essentials-*.zip' | Select-Object -First 1
+          $expected = ((Get-Content -Path ./output/SHA256SUMS.txt) -split '\s+')[0]
+          $actual   = (Get-FileHash -Path $zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+
+          if ($actual -ne $expected) {
+            throw ('The checksum of {0} does not match SHA256SUMS.txt.' -f $zip.Name)
+          }
+
+          Expand-Archive -Path $zip.FullName -DestinationPath ./publish
+          Test-ModuleManifest -Path ./publish/MSAL.Essentials/MSAL.Essentials.psd1 | Out-Null
+
+      - name: Publish the module
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          Publish-Module -Path ./publish/MSAL.Essentials -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -ErrorAction Stop -Verbose
