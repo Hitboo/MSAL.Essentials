@@ -6,14 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.0.1\] -](#101--)
+- [\[1.1.0\] -](#110--)
+  - [Added](#added)
   - [Fixed](#fixed)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr)
-  - [Added](#added)
+  - [Added](#added-1)
 
 
-## [1.0.1] -
+## [1.1.0] -
+
+### Added
+
+- New parameter `LoginHintUpn` to `Get-MsalEssentialsDelegatedTokenSystemBrowser` and `Connect-MsalEssentials` to pass a user principal name (UPN) to pre-fill the username/email field in the browser.
+  - Only as a hint not a guarantee: the user can still change it or sign in with a different account.  
+  - This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
 
 ### Fixed
 

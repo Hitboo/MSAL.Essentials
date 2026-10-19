@@ -86,9 +86,18 @@
         AcquireTokenSilent needs the same client instance, because the
         refresh token lives in its in-memory cache.
 
+    .PARAMETER LoginHintUpn
+        Optional. A user principal name (UPN) to pre-fill the username/email field in the browser. 
+        Only as a hint not a guarantee: the user can still change it or sign in with a different account.
+        This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
+
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read'
         Opens the default browser for sign-in and returns the resulting token.
+
+    .EXAMPLE
+        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -LoginHintUpn 'user@hitboo.test'
+        Opens the default browser for sign-in and pre-fills the username/email field with 'user@hitboo.test', but to the tenant specified by -TenantId.
 
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -TimeoutSeconds 60
@@ -144,7 +153,13 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
 
         [Parameter()]
         [ref]
-        $ApplicationReference
+        $ApplicationReference,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [ValidatePattern('^[^@\s]+@[^@\s]+\.[^@\s]+$')]
+        [string]
+        $LoginHintUpn
     )
 
     # Cancels the pending sign-in once the timeout elapses. Disposed in finally.
@@ -177,11 +192,25 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         # listener instead of drawing a popup inside this process - this is
         # the default on .NET, but explicit here since net472's default is
         # embedded, and this function's whole point is to avoid that path.
-        $authenticationResult = $publicClientApplication.AcquireTokenInteractive(
+        $tokenRequest = $publicClientApplication.AcquireTokenInteractive(
             $Scopes
         ).WithUseEmbeddedWebView(
             $false
-        ).ExecuteAsync(
+        )
+
+        # Provide a login hint to pre-fill the username/email field in the browser. 
+        # Only as a hint not a guarantee: the user can still change it or sign in with a different account.
+        if( $LoginHintUpn) {
+            $tokenRequest = $tokenRequest.WithLoginHint(
+                    $LoginHintUpn
+                ).WithPrompt(
+                    # "Let the identity service decide on the best user experience, based on browser cookies and on the login hint."
+                    # see https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.prompt?view=msal-dotnet-latest
+                    [Microsoft.Identity.Client.Prompt]::NoPrompt
+                )
+        }
+
+        $authenticationResult = $tokenRequest.ExecuteAsync(
             $timeoutSource.Token
         ).GetAwaiter().GetResult()
 

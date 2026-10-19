@@ -65,6 +65,11 @@
         MSAL with an "Only loopback redirect uri is supported" error and need
         a different sign-in flow, such as the embedded web view or WAM, which
         this module does not include.
+    
+    .PARAMETER LoginHintUpn
+        Optional. A user principal name (UPN) to pre-fill the username/email field in the browser. 
+        Only as a hint not a guarantee: the user can still change it or sign in with a different account.
+        This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
 
     .PARAMETER PassThru
         Returns the connection as an object with the properties
@@ -80,6 +85,10 @@
     .EXAMPLE
         Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId
         Opens the default browser for sign-in and stores the connection.
+
+    .EXAMPLE
+        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -LoginHintUpn $LoginHintUpn
+        Opens the default browser for sign-in with a pre-filled username and stores the connection.
 
     .EXAMPLE
         Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read' -TimeoutSeconds 60 -PassThru
@@ -127,14 +136,18 @@ function Connect-MsalEssentials {
         [string[]]
         $Scopes = @('https://graph.microsoft.com/.default'),
 
+        # No default and no validation here: these live in the helper function.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [int]
         $TimeoutSeconds,
 
-        # No default and no validation here: both live in the helper function.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [string]
         $RedirectUri,
+
+        [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
+        [string]
+        $LoginHintUpn,
 
         [Parameter()]
         [switch]
@@ -161,7 +174,7 @@ function Connect-MsalEssentials {
 
             # Only pass optional parameters that were actually supplied, so
             # their defaults live in one place (the helper function).
-            foreach ($optionalParameterName in 'TimeoutSeconds', 'RedirectUri') {
+            foreach ($optionalParameterName in 'TimeoutSeconds', 'RedirectUri', 'LoginHintUpn') {
                 if ($PSBoundParameters.ContainsKey($optionalParameterName)) {
                     $tokenParameters[$optionalParameterName] = $PSBoundParameters[$optionalParameterName]
                 }
