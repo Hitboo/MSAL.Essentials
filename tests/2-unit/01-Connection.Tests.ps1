@@ -22,8 +22,8 @@ BeforeAll {
     $script:ClientId     = '11111111-1111-1111-1111-111111111111'
 
     Get-Module -Name $script:ModuleName |
-        Remove-Module -Force -ErrorAction SilentlyContinue
-    Import-Module -Name $script:ManifestPath -Force -ErrorAction Stop
+        Remove-Module -Force -ErrorAction 'SilentlyContinue'
+    Import-Module -Force -Name $script:ManifestPath -ErrorAction 'Stop'
 
     # A fake MSAL AuthenticationResult with only what the module reads.
     function global:New-MsalTestAuthResult {
@@ -156,17 +156,17 @@ BeforeAll {
 
 AfterAll {
     Get-Module -Name $script:ModuleName |
-        Remove-Module -Force -ErrorAction SilentlyContinue
+        Remove-Module -Force -ErrorAction 'SilentlyContinue'
 
-    Remove-Item -Path 'Function:\New-MsalTestAuthResult', 'Function:\New-MsalTestTask', 'Function:\New-MsalTestClient', 'Function:\New-MsalTestScenario', 'Function:\Get-MsalTestError' -ErrorAction SilentlyContinue
-    Remove-Variable -Name 'MsalTest' -Scope 'Global' -ErrorAction SilentlyContinue
+    Remove-Item -Path 'Function:\New-MsalTestAuthResult', 'Function:\New-MsalTestTask', 'Function:\New-MsalTestClient', 'Function:\New-MsalTestScenario', 'Function:\Get-MsalTestError' -ErrorAction 'SilentlyContinue'
+    Remove-Variable -Name 'MsalTest' -Scope 'Global' -ErrorAction 'SilentlyContinue'
 }
 
 Describe 'MSAL.Essentials connection commands (simulated)' {
     BeforeEach {
         # Start every test without a stored connection.
         InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
-            Remove-Variable -Name 'MsalEssentialsSession' -Scope 'Script' -ErrorAction SilentlyContinue
+            Remove-Variable -Name 'MsalEssentialsSession' -Scope 'Script' -ErrorAction 'SilentlyContinue'
         }
 
         New-MsalTestScenario
@@ -390,7 +390,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             New-MsalTestScenario -ExpiresInMinutes -5 -SilentFailure $uiRequired
             Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
 
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -406,7 +406,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             New-MsalTestScenario -ExpiresInMinutes -5 -SilentFailure ([System.InvalidOperationException]::new('network down'))
             Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
 
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -421,7 +421,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             New-MsalTestScenario -ExpiresInMinutes -5 -SilentFailure $uiRequired
             Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
 
-            $null = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $null = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             # Only the sign-in from Connect-MsalEssentials.
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly
@@ -436,7 +436,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
             InModuleScope -ModuleName $script:ModuleName -ScriptBlock { $script:MsalEssentialsSession } |
                 Should -BeNullOrEmpty
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
             $caught.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NotConnected*'
         }
@@ -462,7 +462,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'does nothing and shows no hint when there is no connection' {
-            { Disconnect-MsalEssentials -InformationVariable disconnectHint -ErrorAction Stop } |
+            { Disconnect-MsalEssentials -InformationVariable disconnectHint -ErrorAction 'Stop' } |
                 Should -Not -Throw
             $disconnectHint |
                 Should -BeNullOrEmpty
@@ -473,14 +473,14 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
             Disconnect-MsalEssentials -InformationAction SilentlyContinue
 
-            { Disconnect-MsalEssentials -InformationAction SilentlyContinue -ErrorAction Stop } |
+            { Disconnect-MsalEssentials -InformationAction SilentlyContinue -ErrorAction 'Stop' } |
                 Should -Not -Throw
         }
     }
 
     Context 'Errors: not connected, nothing to refresh yet' {
         It 'fails with MsalEssentials.NotConnected before any connection exists' {
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -494,14 +494,14 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
             Disconnect-MsalEssentials -InformationAction SilentlyContinue
 
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             $caught.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NotConnected*'
         }
 
         It 'has nothing to renew when a renewal is requested without a connection' {
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -RefreshBeforeExpiryMinutes 1440 -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -RefreshBeforeExpiryMinutes 1440 -ErrorAction 'Stop' }
 
             $caught.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NotConnected*'
@@ -514,14 +514,14 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
                 $script:MsalEssentialsSession = @{ AuthenticationType = 'Delegated'; AuthenticationResult = $null }
             }
 
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             $caught.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NotConnected*'
         }
 
         It 'never signs in by itself' {
-            $null = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $null = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 0 -Exactly
         }
@@ -544,7 +544,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             )
             New-MsalTestScenario -AuthFailure $authFailure
 
-            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -563,9 +563,9 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             )
             New-MsalTestScenario -AuthFailure $authFailure
 
-            $null = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction Stop }
+            $null = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
 
-            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
             $caught.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NotConnected*'
         }
@@ -581,7 +581,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             )
             $global:MsalTest.AuthFailure = $authFailure
 
-            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -592,14 +592,14 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         It 'fails with MsalEssentials.NoToken when sign-in returns no access token' {
             New-MsalTestScenario -AccessToken ''
 
-            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction Stop }
+            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
             $caught.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NoToken*'
 
-            $notConnected = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction Stop }
+            $notConnected = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
             $notConnected.FullyQualifiedErrorId |
                 Should -BeLike 'MsalEssentials.NotConnected*'
         }

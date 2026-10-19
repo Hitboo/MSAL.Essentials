@@ -22,14 +22,14 @@ try {
     # script using this module would use - so this exercises the actual
     # AssemblyResolve handler and dependency loading the module ships with,
     # rather than a copy of that logic maintained separately in the test.
-    Import-Module -Name $ModuleManifestPath -Force
+    Import-Module -Force -Name $ModuleManifestPath
 
     # Add-Type cannot unload an assembly from a running session, so a second
     # -Force import in the same process is the scenario the module's own
     # "skip already-loaded assemblies" guard exists for. Importing a second
     # time here proves that guard actually works, instead of the module
     # only ever being exercised with a single, first-time import.
-    Import-Module -Name $ModuleManifestPath -Force
+    Import-Module -Force -Name $ModuleManifestPath
 
     $publicClientApplication = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create(
         '00000000-0000-0000-0000-000000000000'

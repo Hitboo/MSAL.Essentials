@@ -18,7 +18,7 @@
         FullyQualifiedErrorId values (MsalEssentials.Timeout,
         MsalEssentials.ConditionalAccess, ...) and the TargetObject details
         described in Get-MsalEssentialsDelegatedTokenSystemBrowser. This is a
-        terminating error for the command, so use -ErrorAction Stop or
+        terminating error for the command, so use -ErrorAction 'Stop' or
         try/catch in scripts to make sure nothing runs after a failed sign-in.
 
         Currently supported:
@@ -67,7 +67,7 @@
         this module does not include.
     
     .PARAMETER LoginHintUpn
-        Optional. A user principal name (UPN) to pre-fill the username/email field in the browser. 
+        A user principal name (UPN) to pre-fill the username/email field in the browser. 
         Only as a hint not a guarantee: the user can still change it or sign in with a different account.
         This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
 

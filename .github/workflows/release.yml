@@ -129,7 +129,7 @@ jobs:
       - name: Import the packaged module in Windows PowerShell 5.1
         shell: powershell
         run: |
-          Import-Module -Name ./output/stage/MSAL.Essentials/MSAL.Essentials.psd1 -Force -ErrorAction Stop
+          Import-Module -Name ./output/stage/MSAL.Essentials/MSAL.Essentials.psd1 -Force -ErrorAction 'Stop'
           $expected = 'Connect-MsalEssentials', 'Disconnect-MsalEssentials', 'Get-MsalEssentialsToken'
           $actual   = @(Get-Command -Module MSAL.Essentials | Select-Object -ExpandProperty Name | Sort-Object)
           if (Compare-Object -ReferenceObject $expected -DifferenceObject $actual) {
@@ -139,7 +139,7 @@ jobs:
       - name: Import the packaged module in PowerShell 7
         shell: pwsh
         run: |
-          Import-Module -Name ./output/stage/MSAL.Essentials/MSAL.Essentials.psd1 -Force -ErrorAction Stop
+          Import-Module -Name ./output/stage/MSAL.Essentials/MSAL.Essentials.psd1 -Force -ErrorAction 'Stop'
           $expected = 'Connect-MsalEssentials', 'Disconnect-MsalEssentials', 'Get-MsalEssentialsToken'
           $actual   = @(Get-Command -Module MSAL.Essentials | Select-Object -ExpandProperty Name | Sort-Object)
           if (Compare-Object -ReferenceObject $expected -DifferenceObject $actual) {
@@ -244,4 +244,4 @@ jobs:
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
         run: |
-          Publish-Module -Path ./publish/MSAL.Essentials -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -ErrorAction Stop -Verbose
+          Publish-Module -Verbose -Path ./publish/MSAL.Essentials -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -ErrorAction 'Stop'

@@ -28,12 +28,12 @@ BeforeAll {
 
     # Make sure we start clean
     Get-Module $script:ModuleName |
-    Remove-Module -Force -ErrorAction SilentlyContinue
+    Remove-Module -Force -ErrorAction 'SilentlyContinue'
 }
 
 AfterAll {
     Get-Module $script:ModuleName |
-    Remove-Module -Force -ErrorAction SilentlyContinue
+    Remove-Module -Force -ErrorAction 'SilentlyContinue'
 }
 
 Describe 'MSAL.Essentials module files' {
@@ -46,7 +46,7 @@ Describe 'MSAL.Essentials module files' {
     }
 
     It 'psd1 is a valid module manifest' {
-        { Test-ModuleManifest -Path $script:ManifestPath -ErrorAction Stop } | Should -Not -Throw
+        { Test-ModuleManifest -Path $script:ManifestPath -ErrorAction 'Stop' } | Should -Not -Throw
     }
 
     It 'psm1 has no PowerShell syntax errors' {
@@ -82,10 +82,10 @@ Describe 'MSAL.Essentials import (in-process)' {
         $script:ImportWarnings   = $null
         $script:ErrorCountBefore = $Error.Count
 
-        Get-Module $script:ModuleName | Remove-Module -Force -ErrorAction SilentlyContinue
+        Get-Module $script:ModuleName | Remove-Module -Force -ErrorAction 'SilentlyContinue'
 
         try {
-            Import-Module -Name $script:ManifestPath -Force -ErrorAction Stop `
+            Import-Module -Name $script:ManifestPath -Force -ErrorAction 'Stop' `
                 -ErrorVariable  script:ImportErrors `
                 -WarningVariable script:ImportWarnings
             $script:ImportException = $null
@@ -117,12 +117,12 @@ Describe 'MSAL.Essentials import (in-process)' {
     }
 
     It 'exports command <_>' -ForEach $script:ExpectedCommands {
-        Get-Command -Module $script:ModuleName -Name $_ -ErrorAction SilentlyContinue |
+        Get-Command -Module $script:ModuleName -Name $_ -ErrorAction 'SilentlyContinue' |
             Should -Not -BeNullOrEmpty
     }
 
     It 'can be removed cleanly' {
-        { Remove-Module -Name $script:ModuleName -Force -ErrorAction Stop } | Should -Not -Throw
+        { Remove-Module -Name $script:ModuleName -Force -ErrorAction 'Stop' } | Should -Not -Throw
     }
 }
 
@@ -138,7 +138,7 @@ Describe 'MSAL.Essentials import (fresh process)' {
 `$ErrorActionPreference = 'Stop'
 `$WarningPreference     = 'Continue'
 try {
-    Import-Module '$manifest' -Force -ErrorAction Stop
+    Import-Module '$manifest' -Force -ErrorAction 'Stop'
     if (-not (Get-Module 'MSAL.Essentials')) { throw 'Module not loaded after import.' }
     if ('Microsoft.Identity.Client' -notin [AppDomain]::CurrentDomain.GetAssemblies().GetName().Name) {
         throw 'Microsoft.Identity.Client assembly not loaded.'

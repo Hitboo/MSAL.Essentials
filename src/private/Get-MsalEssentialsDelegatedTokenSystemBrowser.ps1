@@ -81,13 +81,13 @@
         https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#localhost-exceptions
 
     .PARAMETER ApplicationReference
-        Optional. A [ref] variable that receives the MSAL client application
+        A [ref] variable that receives the MSAL client application
         used for the sign-in. Keep it to renew the token silently later:
         AcquireTokenSilent needs the same client instance, because the
         refresh token lives in its in-memory cache.
 
     .PARAMETER LoginHintUpn
-        Optional. A user principal name (UPN) to pre-fill the username/email field in the browser. 
+        A user principal name (UPN) to pre-fill the username/email field in the browser. 
         Only as a hint not a guarantee: the user can still change it or sign in with a different account.
         This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
 

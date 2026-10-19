@@ -186,8 +186,8 @@ foreach ($assemblyName in $EntryAssemblies) {
 # Dot-source every function file so it becomes available in this module's scope.
 # The folder names are lowercase and use forward slashes, so this also works on
 # case-sensitive file systems.
-$PublicFunctions  = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'public/*.ps1')  -ErrorAction Stop)
-$PrivateFunctions = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'private/*.ps1') -ErrorAction Stop)
+$PublicFunctions  = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'public/*.ps1')  -ErrorAction 'Stop')
+$PrivateFunctions = @(Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'private/*.ps1') -ErrorAction 'Stop')
 
 # A module that silently exports nothing is worse than one that fails to import.
 if ($PublicFunctions.Count -eq 0) {

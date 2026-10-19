@@ -58,8 +58,8 @@ BeforeAll {
     $script:ClientIdWithoutLocalhost = $env:MSAL_TEST_CLIENT_ID_NO_LOCALHOST
 
     Get-Module -Name $script:ModuleName |
-        Remove-Module -Force -ErrorAction SilentlyContinue
-    Import-Module -Name $script:ManifestPath -Force -ErrorAction 'Stop'
+        Remove-Module -Force -ErrorAction 'SilentlyContinue'
+    Import-Module -Force -Name $script:ManifestPath -ErrorAction 'Stop'
 }
 
 AfterAll {
@@ -68,7 +68,7 @@ AfterAll {
     }
 
     Get-Module -Name $script:ModuleName |
-        Remove-Module -Force -ErrorAction SilentlyContinue
+        Remove-Module -Force -ErrorAction 'SilentlyContinue'
 }
 
 Describe 'MSAL.Essentials sign-in (real tenant)' -Skip:$script:SkipSignIn {
