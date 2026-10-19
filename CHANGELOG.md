@@ -6,9 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[1.0.1\] -](#101--)
+  - [Fixed](#fixed)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr)
   - [Added](#added)
+
+
+## [1.0.1] -
+
+### Fixed
+
+- Function `Disconnect-MsalEssentials` no longer returns 'System.Threading.Tasks.VoidTaskResult' on Account disposal.
 
 ## [1.0.0] - 2026-10-16
 
