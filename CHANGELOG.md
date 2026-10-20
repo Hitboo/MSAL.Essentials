@@ -36,7 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Function `Disconnect-MsalEssentials` no longer returns 'System.Threading.Tasks.VoidTaskResult' on Account disposal.
+- `Disconnect-MsalEssentials` no longer writes `System.Threading.Tasks.VoidTaskResult` to the pipeline when it removes the cached accounts.
+
 
 ## [1.0.0] - 2026-10-16
 
