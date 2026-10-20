@@ -101,13 +101,13 @@ $minimumPesterVersion = [version]'6.2.0'
 if (-not (Get-Module -Name 'Pester' -ListAvailable | Where-Object -Property 'Version' -GE $minimumPesterVersion)) {
     if ($PSVersionTable.PSEdition -eq 'Desktop') {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Install-PackageProvider -Name 'NuGet' -MinimumVersion '2.8.5.201' -Force -Scope 'CurrentUser' | Out-Null
+        Install-PackageProvider -Force -Name 'NuGet' -MinimumVersion '2.8.5.201' -Scope 'CurrentUser' | Out-Null
     }
-    Install-Module -Name 'Pester' -MinimumVersion $minimumPesterVersion -Scope 'CurrentUser' -Force -SkipPublisherCheck
+    Install-Module -Force -SkipPublisherCheck -Name 'Pester' -MinimumVersion $minimumPesterVersion -Scope 'CurrentUser'
 }
 
 Remove-Module -Name 'Pester' -ErrorAction 'SilentlyContinue'
-Import-Module -Name 'Pester' -MinimumVersion $minimumPesterVersion -Force
+Import-Module -Force -Name 'Pester' -MinimumVersion $minimumPesterVersion
 
 Write-Host ('Running on {0} {1} with Pester {2}' -f $PSVersionTable.PSEdition, $PSVersionTable.PSVersion, (Get-Module -Name 'Pester').Version)
 

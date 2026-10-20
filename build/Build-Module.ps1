@@ -145,14 +145,14 @@ Write-Host 'The libraries match dependencies.json.'
 #endregion 4. Bundled libraries
 
 #region 5. Stage the module files
-Remove-Item -Path $outputFullPath -Recurse -Force -ErrorAction 'SilentlyContinue'
+Remove-Item -Recurse -Force -Path $outputFullPath -ErrorAction 'SilentlyContinue'
 
 $moduleStagePath = Join-Path -Path $outputFullPath -ChildPath 'stage/MSAL.Essentials'
-New-Item -ItemType 'Directory' -Path $moduleStagePath -Force | Out-Null
+New-Item -Force -ItemType 'Directory' -Path $moduleStagePath | Out-Null
 
-Copy-Item -Path (Join-Path -Path $sourcePath -ChildPath '*') -Destination $moduleStagePath -Recurse -Force
+Copy-Item -Recurse -Force -Path (Join-Path -Path $sourcePath -ChildPath '*') -Destination $moduleStagePath
 foreach ($fileName in 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'README.md') {
-    Copy-Item -Path (Join-Path -Path $repositoryRoot -ChildPath $fileName) -Destination $moduleStagePath -Force
+    Copy-Item -Force -Path (Join-Path -Path $repositoryRoot -ChildPath $fileName) -Destination $moduleStagePath
 }
 
 foreach ($requiredFile in 'MSAL.Essentials.psd1', 'MSAL.Essentials.psm1', 'lib/net472/Microsoft.Identity.Client.dll', 'lib/netstandard2.0/Microsoft.Identity.Client.dll') {

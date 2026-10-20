@@ -462,7 +462,7 @@ $($packageReferences -join [Environment]::NewLine)
                 throw ('No DLLs were produced for {0} {1} on {2}.' -f $PackageId, $resolvedVersion, $target.Tfm)
             }
 
-            $dlls | Copy-Item -Destination $dllStage -Force
+            $dlls | Copy-Item -Force -Destination $dllStage
 
             #region Signature check
             if (-not $SkipSignatureCheck) {
@@ -500,7 +500,7 @@ $($packageReferences -join [Environment]::NewLine)
             $destDir = Join-Path -Path $libRootPath -ChildPath $target.Name
             New-Item -Force -ItemType 'Directory' -Path $destDir | Out-Null
             Get-ChildItem -Path $destDir -Filter '*.dll' | Remove-Item -Force
-            Get-ChildItem -Path $stagedDllFolders[$target.Name] -Filter '*.dll' -File | Copy-Item -Destination $destDir -Force
+            Get-ChildItem -Path $stagedDllFolders[$target.Name] -Filter '*.dll' -File | Copy-Item -Force -Destination $destDir
 
             Write-Host ('{0}: {1} DLL(s) copied to {2}' -f $target.Name, $hashesByTarget[$target.Name].Count, $destDir)
             foreach ($entry in $resolvedByTarget[$target.Name]) {

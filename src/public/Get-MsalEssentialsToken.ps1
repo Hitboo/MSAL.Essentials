@@ -56,11 +56,11 @@
 
     .EXAMPLE
         try {
-            $connection = Get-MsalEssentialsToken -ErrorAction Stop
+            $connection = Get-MsalEssentialsToken -ErrorAction 'Stop'
         }
         catch {
-            Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -ErrorAction Stop
-            $connection = Get-MsalEssentialsToken -ErrorAction Stop
+            Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -ErrorAction 'Stop'
+            $connection = Get-MsalEssentialsToken -ErrorAction 'Stop'
         }
         Lets the caller decide how to sign in again when there is no usable token.
 #>
