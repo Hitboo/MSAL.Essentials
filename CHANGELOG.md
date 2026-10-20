@@ -6,14 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.1.0\] -](#110--)
+- [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
+  - [TL;DR](#tldr)
   - [Added](#added)
   - [Fixed](#fixed)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
-  - [TL;DR](#tldr)
+  - [TL;DR](#tldr-1)
   - [Added](#added-1)
 
-## [1.1.0] -
+## [1.1.0] - 2026-10-20
+
+### TL;DR
+
+- New optional parameter `-LoginHintUpn` for `Connect-MsalEssentials` to pre-fill the username in the browser.
+- Fix: `Disconnect-MsalEssentials` no longer writes `VoidTaskResult` to the pipeline.
+- Unit and integration tests for the login hint.
+- Weekly dependency check for the bundled MSAL libraries (workflow and `Test-MsalLibDependencies.ps1`).
+- The 1.0.0 entry below now also lists release workflow details that were missing.
 
 ### Added
 
@@ -37,7 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `Disconnect-MsalEssentials` no longer writes `System.Threading.Tasks.VoidTaskResult` to the pipeline when it removes the cached accounts.
-
 
 ## [1.0.0] - 2026-10-16
 
@@ -102,6 +110,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Workflow**
   - `.github/workflows/ci.yml` to run checks and pester on push and pull requests.
   - `.github\workflows\release.yml` to build the git release.
+    - _Added to this entry after the release (missing at the time of 1.0.0, nothing changed in 1.1.0):_
+      - Tests run as one job per PowerShell edition (Windows PowerShell 5.1 and PowerShell 7). `-AllEditions` from a single PowerShell 7 job made the Windows PowerShell child process inherit the `PSModulePath` of PowerShell 7, which breaks the Pester installation.
+      - Job `publish-gallery` publishes the packaged module to the PowerShell Gallery after the GitHub release. It stays switched off until the repository variable `PUBLISH_TO_GALLERY` is `true`, and it runs in the `powershell-gallery` environment, which can require your approval and holds the `PSGALLERY_API_KEY` secret.
 - **Build**
   - `build/Build-Module.ps1` create the release folder `output` with all files needed for a new build/release/version.
 - **Documentation**
