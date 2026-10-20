@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Tests**
   - Unit tests: `-LoginHintUpn` is passed on to the sign-in only when given, invalid values (no `@`, no user name, no domain, no domain dot, two `@`, a space, empty, `$null`) are rejected, and `Disconnect-MsalEssentials` writes nothing to the pipeline.
+  - Integration tests:
+    - Sign-in with a login hint against a real tenant. It runs only when `MSAL_TEST_LOGIN_HINT_UPN` is set (see the header of `tests/3-integration/01-SignIn.Tests.ps1`).
+    - A hard-coded hint (`user@hitboo.test`) must not sign in by itself: it ends as `MsalEssentials.Timeout` and stores no connection, which confirms nothing is pre-authenticated.
+    - An invalid, empty or `$null` hint is rejected before a browser opens.
 - **Build**
   - `build/Test-MsalLibDependencies.ps1` checks the libraries bundled in `src/lib` for known vulnerabilities (NuGet audit, transitive packages included) and for a newer `Microsoft.Identity.Client` release on nuget.org, without changing anything. Updating is still done with `Update-MsalLibDependencies.ps1`.
 - **Workflow**
