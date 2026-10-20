@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Functions**
+  - New parameter `LoginHintUpn` on `Connect-MsalEssentials` and `Get-MsalEssentialsDelegatedTokenSystemBrowser`. It pre-fills the username/email field in the browser with a user principal name (UPN).
+    - It is only a hint, not a guarantee: the user can still change it or sign in with a different account.
+    - Useful for guest sign-ins, where it points to the right account in the target tenant, and to save users from typing their address.
+    - With a hint, the sign-in uses the `NoPrompt` behavior: if the browser already has a session for that account, sign-in can complete without asking for credentials. The hint is only shown as pre-filled when the browser has no signed-in session; otherwise Entra ID uses the session (or its account picker) and the hint does not appear.
+    - The value must look like a UPN (`name@domain.tld`).
 - **Tests**
   - Unit tests: `-LoginHintUpn` is passed on to the sign-in only when given, invalid values (no `@`, no user name, no domain, no domain dot, two `@`, a space, empty, `$null`) are rejected, and `Disconnect-MsalEssentials` writes nothing to the pipeline.
   - Integration tests:
