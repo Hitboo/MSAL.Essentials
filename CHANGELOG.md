@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - [TL;DR](#tldr)
   - [Added](#added-1)
 
-
 ## [1.1.0] -
 
 ### Added
@@ -23,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
 - **Build**
   - `build/Test-MsalLibDependencies.ps1` checks the libraries bundled in `src/lib` for known vulnerabilities (NuGet audit, transitive packages included) and for a newer `Microsoft.Identity.Client` release on nuget.org, without changing anything. Updating is still done with `Update-MsalLibDependencies.ps1`.
+- **Workflow**
+  - `.github/workflows/dependency-check.yml` runs the check above every Monday and on demand. A vulnerability of severity Moderate or higher (or an audit that could not run) fails the run; a newer MSAL.NET opens (and later closes) an issue labeled `msal-update`.
 
 ### Fixed
 
