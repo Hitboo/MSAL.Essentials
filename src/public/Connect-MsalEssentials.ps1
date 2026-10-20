@@ -65,11 +65,19 @@
         MSAL with an "Only loopback redirect uri is supported" error and need
         a different sign-in flow, such as the embedded web view or WAM, which
         this module does not include.
-    
+
     .PARAMETER LoginHintUpn
-        A user principal name (UPN) to pre-fill the username/email field in the browser. 
-        Only as a hint not a guarantee: the user can still change it or sign in with a different account.
-        This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
+        A user principal name (UPN) to pre-fill the username/email field in the
+        browser. It is only a hint, not a guarantee: the user can still change
+        it or sign in with a different account.
+        Useful for guest sign-ins, where it points to the right account in the
+        target tenant, and to save users from typing their address.
+        When a hint is given, the prompt behavior is set to NoPrompt, so Entra
+        ID decides based on the hint and the browser cookies. If the browser
+        already has a session for that account, sign-in can complete without
+        asking for credentials. The hint is only shown as pre-filled when the
+        browser has no signed-in session; otherwise Entra ID uses the session
+        (or its account picker) and the hint does not appear.
 
     .PARAMETER PassThru
         Returns the connection as an object with the properties
@@ -87,7 +95,7 @@
         Opens the default browser for sign-in and stores the connection.
 
     .EXAMPLE
-        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -LoginHintUpn $LoginHintUpn
+        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -LoginHintUpn 'user@hitboo.test'
         Opens the default browser for sign-in with a pre-filled username and stores the connection.
 
     .EXAMPLE

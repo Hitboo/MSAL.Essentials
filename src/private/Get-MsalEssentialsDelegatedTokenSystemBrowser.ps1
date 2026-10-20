@@ -87,9 +87,17 @@
         refresh token lives in its in-memory cache.
 
     .PARAMETER LoginHintUpn
-        A user principal name (UPN) to pre-fill the username/email field in the browser. 
-        Only as a hint not a guarantee: the user can still change it or sign in with a different account.
-        This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
+        A user principal name (UPN) to pre-fill the username/email field in the
+        browser. It is only a hint, not a guarantee: the user can still change
+        it or sign in with a different account.
+        Useful for guest sign-ins, where it points to the right account in the
+        target tenant, and to save users from typing their address.
+        When a hint is given, the prompt behavior is set to NoPrompt, so Entra
+        ID decides based on the hint and the browser cookies. If the browser
+        already has a session for that account, sign-in can complete without
+        asking for credentials. The hint is only shown as pre-filled when the
+        browser has no signed-in session; otherwise Entra ID uses the session
+        (or its account picker) and the hint does not appear.
 
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read'
@@ -97,7 +105,7 @@
 
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -LoginHintUpn 'user@hitboo.test'
-        Opens the default browser for sign-in and pre-fills the username/email field with 'user@hitboo.test', but to the tenant specified by -TenantId.
+        Opens the default browser for sign-in and pre-fills the username/email field with 'user@hitboo.test', and signs in to the tenant specified by -TenantId.
 
     .EXAMPLE
         Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -TimeoutSeconds 60
@@ -198,9 +206,9 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
             $false
         )
 
-        # Provide a login hint to pre-fill the username/email field in the browser. 
-        # Only as a hint not a guarantee: the user can still change it or sign in with a different account.
-        if( $LoginHintUpn) {
+        # Provide a login hint to pre-fill the username/email field in the browser.
+        # It is only a hint, not a guarantee: the user can still change it or sign in with a different account.
+        if ($LoginHintUpn) {
             $tokenRequest = $tokenRequest.WithLoginHint(
                     $LoginHintUpn
                 ).WithPrompt(

@@ -71,7 +71,7 @@ function Disconnect-MsalEssentials {
         try {
             $accounts = $session.PublicClientApplication.GetAccountsAsync().GetAwaiter().GetResult()
             foreach ($account in $accounts) {
-                # Null to prevent the result of RemoveAsync from being written to the pipeline. System.Threading.Tasks.VoidTaskResult
+                # Discard the VoidTaskResult that RemoveAsync returns, so it isn't written to the pipeline.
                 $null = $session.PublicClientApplication.RemoveAsync($account).GetAwaiter().GetResult()
             }
         }
