@@ -17,9 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New parameter `LoginHintUpn` to `Get-MsalEssentialsDelegatedTokenSystemBrowser` and `Connect-MsalEssentials` to pass a user principal name (UPN) to pre-fill the username/email field in the browser.
-  - Only as a hint not a guarantee: the user can still change it or sign in with a different account.  
-  - This is helpful for guest sign-ins, on the target tenant for a more targeted experience, or to avoid the user having to type their email address.
+- **Tests**
+  - Unit tests: `-LoginHintUpn` is passed on to the sign-in only when given, invalid values (no `@`, no user name, no domain, no domain dot, two `@`, a space, empty, `$null`) are rejected, and `Disconnect-MsalEssentials` writes nothing to the pipeline.
 - **Build**
   - `build/Test-MsalLibDependencies.ps1` checks the libraries bundled in `src/lib` for known vulnerabilities (NuGet audit, transitive packages included) and for a newer `Microsoft.Identity.Client` release on nuget.org, without changing anything. Updating is still done with `Update-MsalLibDependencies.ps1`.
 - **Workflow**

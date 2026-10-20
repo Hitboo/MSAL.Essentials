@@ -111,6 +111,11 @@ BeforeAll {
             New-MsalTestTask -Client $this -Argument $Account -Work {
                 param ($Task)
                 $Task.Client.RemovedAccounts.Add($Task.Argument)
+
+                # The real RemoveAsync returns a Task that yields a
+                # VoidTaskResult. Return a value, so a missing discard in
+                # the module shows up as pipeline output.
+                [pscustomobject]@{ TypeName = 'System.Threading.Tasks.VoidTaskResult' }
             }
         }
 
@@ -270,6 +275,47 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
                 $RedirectUri -eq 'http://localhost:1234/app'
             }
+        }
+
+        It 'passes -LoginHintUpn to the sign-in' {
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -LoginHintUpn 'user@hitboo.test'
+
+            Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
+                $LoginHintUpn -eq 'user@hitboo.test'
+            }
+        }
+
+        It 'does not pass -LoginHintUpn to the sign-in when it is not given' {
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+
+            Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
+                -not $PSBoundParameters.ContainsKey('LoginHintUpn')
+            }
+        }
+
+        It 'rejects -LoginHintUpn <Name>' -ForEach @(
+            @{ Name = 'without an @';          Value = 'not-a-upn' }
+            @{ Name = 'without a user name';   Value = '@hitboo.test' }
+            @{ Name = 'without a domain';      Value = 'user@' }
+            @{ Name = 'without a domain dot';  Value = 'user@hitboo' }
+            @{ Name = 'with two @';            Value = 'user@@hitboo.test' }
+            @{ Name = 'with a space';          Value = 'us er@hitboo.test' }
+            @{ Name = 'that is empty';         Value = '' }
+            @{ Name = 'that is null';          Value = $null }
+        ) {
+            # Calls the real sign-in helper (not the mock). Parameter
+            # validation fails before any MSAL code runs.
+            $caught = InModuleScope -ModuleName $script:ModuleName -Parameters @{ Value = $Value } -ScriptBlock {
+                try {
+                    Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId 'hitboo.test' -ClientID '11111111-1111-1111-1111-111111111111' -LoginHintUpn $Value
+                }
+                catch {
+                    $_
+                }
+            }
+
+            $caught.FullyQualifiedErrorId |
+                Should -BeLike 'ParameterArgumentValidationError*'
         }
     }
 
@@ -450,6 +496,15 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
                 Should -Be 1
             $global:MsalTest.Client.RemovedAccounts[0].Username |
                 Should -Be 'user@hitboo.test'
+        }
+
+        It 'writes nothing to the pipeline' {
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+
+            $output = @(Disconnect-MsalEssentials -InformationAction SilentlyContinue)
+
+            $output.Count |
+                Should -Be 0
         }
 
         It 'shows a hint to remove variables that hold the token' {
