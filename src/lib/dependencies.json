@@ -1,9 +1,9 @@
 {
-  "Microsoft.Identity.Client": "4.90.1",
+  "Microsoft.Identity.Client": "4.91.1",
   "Resolved": {
     "net472": [
       "Microsoft.Bcl.AsyncInterfaces/6.0.0",
-      "Microsoft.Identity.Client/4.90.1",
+      "Microsoft.Identity.Client/4.91.1",
       "Microsoft.IdentityModel.Abstractions/8.14.0",
       "System.Buffers/4.5.1",
       "System.Diagnostics.DiagnosticSource/6.0.1",
@@ -18,7 +18,7 @@
     ],
     "netstandard2.0": [
       "Microsoft.Bcl.AsyncInterfaces/6.0.0",
-      "Microsoft.Identity.Client/4.90.1",
+      "Microsoft.Identity.Client/4.91.1",
       "Microsoft.IdentityModel.Abstractions/8.14.0",
       "Microsoft.NETCore.Platforms/1.1.0",
       "NETStandard.Library/2.0.3",
@@ -37,7 +37,7 @@
   "Hashes": {
     "net472": {
       "Microsoft.Bcl.AsyncInterfaces.dll": "295AF2142D9214F3FD84EAFE4778DCA119BE7E0229F14B6BA8D5269C2F1E2E78",
-      "Microsoft.Identity.Client.dll": "6E0A710DFE2FF02DF0B5B8C488D3A47474E7A208452CB7659974E008D6030A19",
+      "Microsoft.Identity.Client.dll": "879E5F155ACA0696E5C62CC807AE5E98AEEDB51A3CEF3C8BCF42CC7E026CECAF",
       "Microsoft.IdentityModel.Abstractions.dll": "DE168BCBC53946DDCC19F466CC40E685C56B5461859667033CF83553CEBE4AD8",
       "System.Buffers.dll": "ACCCCFBE45D9F08FFEED9916E37B33E98C65BE012CFFF6E7FA7B67210CE1FEFB",
       "System.Diagnostics.DiagnosticSource.dll": "19BA42737C1C0500373736968F3D15CB7897CB195049FD5F492E6FE1629DAAAB",
@@ -52,7 +52,7 @@
     },
     "netstandard2.0": {
       "Microsoft.Bcl.AsyncInterfaces.dll": "92D094A2EDCB7686F221C815186C384B4B010D4C56C5B2D3825B0E8C549841DA",
-      "Microsoft.Identity.Client.dll": "C63892A4C6303250C2B266A7F27EC0011135D3838AB8F01788F39AEC1EA22C32",
+      "Microsoft.Identity.Client.dll": "ED506AE2C40F9404A5354795C61ED217365776CDD94CF310FBC3C4644F8C1FD5",
       "Microsoft.IdentityModel.Abstractions.dll": "1335AD7595661EACCED29A00CE9D5CC675C67D38A84FC75387C4D9A5BD91FEDE",
       "System.Buffers.dll": "C65FFF603B283DC966D1A8B730C11D5E5E750E8021BD24640612F6CC3F2C6FB7",
       "System.Diagnostics.DiagnosticSource.dll": "06EB3AF44D64C4739C7801493619AD9AF86FF05B5444C42609370C26E5CAF1F4",

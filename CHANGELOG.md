@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
+  - [Changed](#changed)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr)
   - [Added](#added)
@@ -13,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-1)
   - [Added](#added-1)
+
+## [1.1.1] - 2026-10-23
+
+### Changed
+
+- Bundled MSAL.NET (`Microsoft.Identity.Client`) updated from 4.90.1 to 4.91.1 in `src/lib` for Windows PowerShell 5.1 (`net472`) and PowerShell 7 (`netstandard2.0`), as proposed by the dependency check (issue #12).
+  - The dependencies of both targets are unchanged and still pinned in `dependencies.json`.
+  - No changes to the module's commands or parameters.
 
 ## [1.1.0] - 2026-10-20
 
