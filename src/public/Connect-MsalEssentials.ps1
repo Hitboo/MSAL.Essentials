@@ -30,7 +30,7 @@
     .PARAMETER TenantId
         The directory (tenant) ID or verified domain to authenticate against.
 
-    .PARAMETER ClientID
+    .PARAMETER ClientId
         The application (client) ID registered in Entra ID.
 
     .PARAMETER Scopes
@@ -91,24 +91,24 @@
         similar commands will include it. Don't log or share the object.
 
     .EXAMPLE
-        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId
         Opens the default browser for sign-in and stores the connection.
 
     .EXAMPLE
-        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -LoginHintUpn 'user@hitboo.test'
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -LoginHintUpn 'user@hitboo.test'
         Opens the default browser for sign-in with a pre-filled username and stores the connection.
 
     .EXAMPLE
-        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read' -TimeoutSeconds 60 -PassThru
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -Scopes 'User.Read' -TimeoutSeconds 60 -PassThru
         Requests only User.Read, gives up after 60 seconds, and returns the connection.
 
     .EXAMPLE
-        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -RedirectUri 'http://localhost:1234'
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -RedirectUri 'http://localhost:1234'
         Listens on the fixed port 1234. 'http://localhost:1234' must be registered on the app.
 
     .EXAMPLE
         try {
-            $connection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientID $clientId -ErrorAction 'Stop'
+            $connection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientId $clientId -ErrorAction 'Stop'
 
             $request = @{
                 Uri         = 'https://graph.microsoft.com/beta/me'
@@ -128,7 +128,7 @@ function Connect-MsalEssentials {
     [CmdletBinding(DefaultParameterSetName = 'DelegatedSystemBrowser')]
     [OutputType('MsalEssentials.Connection')]
     param (
-        # TenantId and ClientID have no parameter set, so they belong to every set.
+        # TenantId and ClientId have no parameter set, so they belong to every set.
         # When app / managed identity sets are added, move them into the sets that need them.
         [Parameter(Mandatory)]
         [string]
@@ -136,7 +136,7 @@ function Connect-MsalEssentials {
 
         [Parameter(Mandatory)]
         [string]
-        $ClientID,
+        $ClientId,
 
         # Keep this default in sync with Get-MsalEssentialsDelegatedTokenSystemBrowser.
         # It is needed here because the scopes are stored for silent token renewal.
@@ -173,7 +173,7 @@ function Connect-MsalEssentials {
 
             $tokenParameters = @{
                 TenantId             = $TenantId
-                ClientID             = $ClientID
+                ClientId             = $ClientId
                 Scopes               = $requestedScopes
                 # Receives the MSAL client. Silent renewal needs the same client
                 # instance, because the refresh token lives in its in-memory cache.
@@ -226,7 +226,7 @@ function Connect-MsalEssentials {
     $script:MsalEssentialsSession = @{
         AuthenticationType      = $authenticationType
         TenantId                = $TenantId # as supplied, reused if a new sign-in is needed
-        ClientId                = $ClientID
+        ClientId                = $ClientId
         RequestedScopes         = $requestedScopes
         PublicClientApplication = $publicClientApplication
         AuthenticationResult    = $authenticationResult

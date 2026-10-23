@@ -45,7 +45,7 @@
         to 15. Use 0 to renew only once the token has expired.
 
     .EXAMPLE
-        Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId
         $connection = Get-MsalEssentialsToken
         Invoke-RestMethod -Uri 'https://graph.microsoft.com/v1.0/me' -Headers @{ Authorization = $connection.CreateAuthorizationHeader() }
         Signs in once, then gets the token before each request; it is renewed silently when it expires soon.
@@ -59,7 +59,7 @@
             $connection = Get-MsalEssentialsToken -ErrorAction 'Stop'
         }
         catch {
-            Connect-MsalEssentials -TenantId $tenantId -ClientID $clientId -ErrorAction 'Stop'
+            Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -ErrorAction 'Stop'
             $connection = Get-MsalEssentialsToken -ErrorAction 'Stop'
         }
         Lets the caller decide how to sign in again when there is no usable token.

@@ -100,29 +100,29 @@
         (or its account picker) and the hint does not appear.
 
     .EXAMPLE
-        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -Scopes 'User.Read'
+        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientId $clientId -Scopes 'User.Read'
         Opens the default browser for sign-in and returns the resulting token.
 
     .EXAMPLE
-        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -LoginHintUpn 'user@hitboo.test'
+        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientId $clientId -LoginHintUpn 'user@hitboo.test'
         Opens the default browser for sign-in and pre-fills the username/email field with 'user@hitboo.test', and signs in to the tenant specified by -TenantId.
 
     .EXAMPLE
-        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -TimeoutSeconds 60
+        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientId $clientId -TimeoutSeconds 60
         Gives up after 60 seconds if sign-in has not completed.
 
     .EXAMPLE
-        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -RedirectUri 'http://localhost:1234'
+        Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientId $clientId -RedirectUri 'http://localhost:1234'
         Listens on the fixed port 1234. 'http://localhost:1234' must be registered on the app.
 
     .EXAMPLE
         $publicClientApplication = $null
-        $token = Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId -ApplicationReference ([ref]$publicClientApplication)
+        $token = Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientId $clientId -ApplicationReference ([ref]$publicClientApplication)
         Returns the token and also stores the MSAL client in $publicClientApplication.
 
     .EXAMPLE
         try {
-            $token = Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientID $clientId
+            $token = Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId $tenantId -ClientId $clientId
         }
         catch {
             if ($_.TargetObject.Category -eq 'ConditionalAccess') { ... }
@@ -138,7 +138,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
 
         [Parameter(Mandatory)]
         [string]
-        $ClientID,
+        $ClientId,
 
         [Parameter()]
         [string[]]
@@ -177,7 +177,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         #region Build the MSAL client
 
         $publicClientApplication = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create(
-            $ClientID
+            $ClientId
         ).WithAuthority(
             ('https://login.microsoftonline.com/{0}' -f $TenantId)
         ).WithRedirectUri(
@@ -294,7 +294,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         $knownAadstsErrors = @{
             '50011'  = @{ Category = 'AppConfiguration';  Hint = $redirectUriHint }
             '500113' = @{ Category = 'AppConfiguration';  Hint = $redirectUriHint }
-            '700016' = @{ Category = 'AppConfiguration';  Hint = 'The application (client) ID was not found in this tenant. Check -ClientID and -TenantId, and that the app is registered or consented in this tenant.' }
+            '700016' = @{ Category = 'AppConfiguration';  Hint = 'The application (client) ID was not found in this tenant. Check -ClientId and -TenantId, and that the app is registered or consented in this tenant.' }
             '70011'  = @{ Category = 'AppConfiguration';  Hint = 'A requested scope is not valid. Check -Scopes.' }
             '65001'  = @{ Category = 'Unauthorized';      Hint = 'The user or an administrator has not consented to the requested permissions. Ask an administrator to grant consent for this app.' }
             '65004'  = @{ Category = 'Unauthorized';      Hint = 'The user declined the consent request. Sign in again and accept it, or ask an administrator to grant consent.' }
@@ -393,7 +393,7 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
                 CorrelationId = $correlationId
                 Claims        = $claims
                 TenantId      = $TenantId
-                ClientId      = $ClientID
+                ClientId      = $ClientId
             }
         )
         $errorRecord.ErrorDetails = [System.Management.Automation.ErrorDetails]::new(($detailLines -join [System.Environment]::NewLine))

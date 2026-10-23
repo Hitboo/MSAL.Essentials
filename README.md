@@ -130,7 +130,7 @@ Import-Module -Name 'MSAL.Essentials'
 # The directory (tenant) ID or verified domain to authenticate against.
 [string]$TenantId = 'EXAMPLE.onmicrosoft.com'
 # The application (client) ID registered in Entra ID.
-[string]$ClientID = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line Tools (for testing)
+[string]$ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line Tools (for testing)
 # Permission scopes to request. 'User.Read' is enough for the request below.
 # 'https://graph.microsoft.com/.default' returns all delegated permissions that are already granted to the app.
 [string[]]$Scopes = @('User.Read')
@@ -139,7 +139,7 @@ Import-Module -Name 'MSAL.Essentials'
 #region Connect to Microsoft Graph via MSAL.Essentials
 try {
     # Get an MSAL token via the interactive system browser. The token is only kept in memory for this PowerShell session.
-    $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $TenantId -ClientID $ClientID -Scopes $Scopes -ErrorAction 'Stop'
+    $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $TenantId -ClientId $ClientId -Scopes $Scopes -ErrorAction 'Stop'
 
     # If the request might happen later or takes longer, make sure to have a valid token.
     # Get-MsalEssentialsToken tries to get a new token silently if it expires in less than 15 minutes (the default).

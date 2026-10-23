@@ -193,7 +193,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
     Context 'Connect-MsalEssentials' {
         It 'stores the connection and returns nothing without -PassThru' {
-            $result = Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            $result = Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $result |
                 Should -BeNullOrEmpty
@@ -202,7 +202,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'returns the connection with -PassThru' {
-            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -PassThru
+            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -PassThru
 
             $connection.PSObject.TypeNames |
                 Should -Contain 'MsalEssentials.Connection'
@@ -223,14 +223,14 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'creates an authorization header' {
-            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -PassThru
+            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -PassThru
 
             $connection.CreateAuthorizationHeader() |
                 Should -Be 'Bearer initial-access-token'
         }
 
         It 'keeps the access token out of the default display' {
-            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -PassThru
+            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -PassThru
 
             $connection.PSStandardMembers.DefaultDisplayPropertySet.ReferencedPropertyNames |
                 Should -Not -Contain 'AccessToken'
@@ -244,7 +244,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'passes -Scopes and -TimeoutSeconds to the sign-in' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -Scopes 'Mail.Read' -TimeoutSeconds 30
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -Scopes 'Mail.Read' -TimeoutSeconds 30
 
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
                 $Scopes -contains 'Mail.Read' -and $TimeoutSeconds -eq 30
@@ -252,7 +252,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'requests the Microsoft Graph default scope when no scopes are given' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
                 $Scopes -contains 'https://graph.microsoft.com/.default'
@@ -260,17 +260,17 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'replaces an existing connection' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             New-MsalTestScenario -AccessToken 'second-access-token'
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             (Get-MsalEssentialsToken).AccessToken |
                 Should -Be 'second-access-token'
         }
 
         It 'passes -RedirectUri to the sign-in' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -RedirectUri 'http://localhost:1234/app'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -RedirectUri 'http://localhost:1234/app'
 
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
                 $RedirectUri -eq 'http://localhost:1234/app'
@@ -278,7 +278,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'passes -LoginHintUpn to the sign-in' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -LoginHintUpn 'user@hitboo.test'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -LoginHintUpn 'user@hitboo.test'
 
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
                 $LoginHintUpn -eq 'user@hitboo.test'
@@ -286,7 +286,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'does not pass -LoginHintUpn to the sign-in when it is not given' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             Should -Invoke -CommandName 'Get-MsalEssentialsDelegatedTokenSystemBrowser' -ModuleName $script:ModuleName -Times 1 -Exactly -ParameterFilter {
                 -not $PSBoundParameters.ContainsKey('LoginHintUpn')
@@ -307,7 +307,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             # validation fails before any MSAL code runs.
             $caught = InModuleScope -ModuleName $script:ModuleName -Parameters @{ Value = $Value } -ScriptBlock {
                 try {
-                    Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId 'hitboo.test' -ClientID '11111111-1111-1111-1111-111111111111' -LoginHintUpn $Value
+                    Get-MsalEssentialsDelegatedTokenSystemBrowser -TenantId 'hitboo.test' -ClientId '11111111-1111-1111-1111-111111111111' -LoginHintUpn $Value
                 }
                 catch {
                     $_
@@ -321,7 +321,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
     Context 'Get-MsalEssentialsToken' {
         It 'returns the connection object' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $token = Get-MsalEssentialsToken
 
@@ -335,7 +335,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'does not renew a token that has more than 15 minutes left' {
             New-MsalTestScenario -ExpiresInMinutes 60
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $token = Get-MsalEssentialsToken
 
@@ -349,7 +349,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
     Context 'Silent renewal' {
         It 'renews silently when the token expires within 15 minutes' {
             New-MsalTestScenario -ExpiresInMinutes 10
-            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -PassThru
+            $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -PassThru
 
             $token = Get-MsalEssentialsToken
 
@@ -363,7 +363,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'forces a refresh so MSAL does not return the cached token' {
             New-MsalTestScenario -ExpiresInMinutes 10
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
 
@@ -373,7 +373,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'renews with the scopes the connection was created with' {
             New-MsalTestScenario -ExpiresInMinutes 10
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -Scopes 'Mail.Read'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -Scopes 'Mail.Read'
 
             $null = Get-MsalEssentialsToken
 
@@ -383,7 +383,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'does not renew again once the renewed token is fresh' {
             New-MsalTestScenario -ExpiresInMinutes 10 -RenewedExpiresInMinutes 60
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
             $null = Get-MsalEssentialsToken
@@ -394,7 +394,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'uses -RefreshBeforeExpiryMinutes to decide when to renew' {
             New-MsalTestScenario -ExpiresInMinutes 30
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
             $global:MsalTest.Client.SilentCallCount |
@@ -409,7 +409,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'never starts a sign-in while renewing' {
             New-MsalTestScenario -ExpiresInMinutes 10
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
 
@@ -419,7 +419,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'returns the current token with a warning when renewal fails but the token is still valid' {
             New-MsalTestScenario -ExpiresInMinutes 10 -SilentFailure ([System.InvalidOperationException]::new('network down'))
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $token = Get-MsalEssentialsToken -WarningVariable renewalWarning -WarningAction SilentlyContinue
 
@@ -434,7 +434,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         It 'fails with MsalEssentials.ReconnectRequired when the token expired and a new sign-in is needed' {
             $uiRequired = [Microsoft.Identity.Client.MsalUiRequiredException]::new('interaction_required', 'The refresh token has expired.')
             New-MsalTestScenario -ExpiresInMinutes -5 -SilentFailure $uiRequired
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
@@ -450,7 +450,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
         It 'passes other renewal errors through when the token expired' {
             New-MsalTestScenario -ExpiresInMinutes -5 -SilentFailure ([System.InvalidOperationException]::new('network down'))
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
@@ -465,7 +465,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         It 'never starts a sign-in when the token expired and cannot be renewed' {
             $uiRequired = [Microsoft.Identity.Client.MsalUiRequiredException]::new('interaction_required', 'The refresh token has expired.')
             New-MsalTestScenario -ExpiresInMinutes -5 -SilentFailure $uiRequired
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
 
@@ -476,7 +476,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
 
     Context 'Disconnect-MsalEssentials' {
         It 'clears the connection' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             Disconnect-MsalEssentials -InformationAction SilentlyContinue
 
@@ -488,7 +488,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'removes the accounts from the MSAL token cache' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             Disconnect-MsalEssentials -InformationAction SilentlyContinue
 
@@ -499,7 +499,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'writes nothing to the pipeline' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $output = @(Disconnect-MsalEssentials -InformationAction SilentlyContinue)
 
@@ -508,7 +508,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'shows a hint to remove variables that hold the token' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             Disconnect-MsalEssentials -InformationVariable disconnectHint -InformationAction SilentlyContinue
 
@@ -524,7 +524,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'can be run twice' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             Disconnect-MsalEssentials -InformationAction SilentlyContinue
 
@@ -546,7 +546,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'fails with MsalEssentials.NotConnected after Disconnect-MsalEssentials' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
             Disconnect-MsalEssentials -InformationAction SilentlyContinue
 
             $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
@@ -599,7 +599,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             )
             New-MsalTestScenario -AuthFailure $authFailure
 
-            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
+            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -618,7 +618,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             )
             New-MsalTestScenario -AuthFailure $authFailure
 
-            $null = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
+            $null = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -ErrorAction 'Stop' }
 
             $caught = Get-MsalTestError -ScriptBlock { Get-MsalEssentialsToken -ErrorAction 'Stop' }
             $caught.FullyQualifiedErrorId |
@@ -626,7 +626,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'keeps the previous connection when a new sign-in fails' {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $authFailure = [System.Management.Automation.ErrorRecord]::new(
                 [System.InvalidOperationException]::new('Sign-in failed: simulated'),
@@ -636,7 +636,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
             )
             $global:MsalTest.AuthFailure = $authFailure
 
-            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
+            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty
@@ -647,7 +647,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         It 'fails with MsalEssentials.NoToken when sign-in returns no access token' {
             New-MsalTestScenario -AccessToken ''
 
-            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -ErrorAction 'Stop' }
+            $caught = Get-MsalTestError -ScriptBlock { Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -ErrorAction 'Stop' }
 
             $caught |
                 Should -Not -BeNullOrEmpty

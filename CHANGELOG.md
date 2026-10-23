@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[1.2.0\] - 2026-10-23](#120---2026-10-23)
+  - [TL;DR](#tldr)
+  - [Changed](#changed)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
@@ -13,8 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - [Added](#added)
   - [Fixed](#fixed)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
-  - [TL;DR](#tldr-1)
-  - [Added](#added-1)
+
+## [1.2.0] - 2026-10-23
+
+### TL;DR
+- The parameter `-ClientID` is now spelled `-ClientId`. PowerShell ignores the letter case, so existing calls keep working.
+
+### Changed
+
+- Parameter `-ClientID` renamed to `-ClientId` (PascalCase, consistent with the `ClientId` property of the connection). Calls with `-ClientID` still work, because PowerShell parameter names are not case-sensitive.
 
 ## [1.1.1] - 2026-10-23
 
