@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Failures become terminating errors with an `MsalEssentials.<Category>` error ID, a hint and the technical details in `TargetObject`, with hints for typical app errors (wrong or expired secret, certificate not uploaded, public client flows enabled, unknown tenant).
 - **Tests**
   - Unit tests for application permissions (`02-ApplicationConnection.Tests.ps1`): both parameter sets, scope handling, private key check, rejected credentials (wrong secret, certificate not uploaded, app without credentials), renewal (forced refresh, scopes, failure with a valid or expired token) and `Disconnect-MsalEssentials`.
+  - Integration tests for application permissions (`02-ApplicationSignIn.Tests.ps1`) against a real tenant, without a browser: the same checks as the unit tests with real tokens, including the AADSTS codes of rejected credentials and a real renewal. Each part runs only when its app registration is configured (`MSAL_TEST_APP_SECRET_CLIENT_ID` / `MSAL_TEST_APP_SECRET`, `MSAL_TEST_APP_CERT_CLIENT_ID` / `MSAL_TEST_APP_CERT_THUMBPRINT`, `MSAL_TEST_APP_NO_CREDENTIALS_CLIENT_ID`, see the header of the file).
 - **Documentation**
   - New note [`ClientSecret-REST-Standalone.md`](/docs/notes/ClientSecret-REST-Standalone.md): minimal standalone example of the client secret flow with plain REST (no MSAL), followed by a Microsoft Graph request to `beta/users`.
 
