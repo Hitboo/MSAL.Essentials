@@ -8,12 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [\[1.2.0\] - 2026-10-23](#120---2026-10-23)
   - [TL;DR](#tldr)
+  - [Added](#added)
   - [Changed](#changed)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr)
-  - [Added](#added)
+  - [Added](#added-1)
   - [Fixed](#fixed)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
 
@@ -21,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### TL;DR
 - The parameter `-ClientID` is now spelled `-ClientId`. PowerShell ignores the letter case, so existing calls keep working.
+
+### Added
+
+- **Documentation**
+  - New note [`ClientSecret-REST-Standalone.md`](/docs/notes/ClientSecret-REST-Standalone.md): minimal standalone example of the client secret flow with plain REST (no MSAL), followed by a Microsoft Graph request to `beta/users`.
 
 ### Changed
 
