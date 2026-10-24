@@ -10,10 +10,10 @@
 # The directory (tenant) ID or verified domain to authenticate against.
 [string]$TenantId = '00000000-0000-0000-0000-000000000000'
 # The application (client) ID registered in Entra ID.
-[string]$ClientID = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line Tools
+[string]$ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line Tools
 
 $publicClientApplication = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create(
-    $ClientID                                              # Target app
+    $ClientId                                              # Target app
 ).WithAuthority(
     ('https://login.microsoftonline.com/{0}' -f $TenantId) # Target tenant
 ).WithRedirectUri(

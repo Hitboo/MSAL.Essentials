@@ -67,12 +67,14 @@ function Disconnect-MsalEssentials {
     # client. The client is dropped below anyway; this clears the cache now
     # instead of waiting for garbage collection. A failure here must not
     # stop the session from being cleared.
-    if ($session.PublicClientApplication) {
+    # Only delegated connections have accounts. An application connection has
+    # no user account to remove; dropping its client clears its token cache.
+    if ($session.AuthenticationType -eq 'Delegated' -and $session.ClientApplication) {
         try {
-            $accounts = $session.PublicClientApplication.GetAccountsAsync().GetAwaiter().GetResult()
+            $accounts = $session.ClientApplication.GetAccountsAsync().GetAwaiter().GetResult()
             foreach ($account in $accounts) {
                 # Discard the VoidTaskResult that RemoveAsync returns, so it isn't written to the pipeline.
-                $null = $session.PublicClientApplication.RemoveAsync($account).GetAwaiter().GetResult()
+                $null = $session.ClientApplication.RemoveAsync($account).GetAwaiter().GetResult()
             }
         }
         catch {

@@ -6,15 +6,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
-  - [Changed](#changed)
-- [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
+- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr)
   - [Added](#added)
-  - [Fixed](#fixed)
-- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [Changed](#changed)
+- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
+  - [Changed](#changed-1)
+- [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-1)
   - [Added](#added-1)
+  - [Fixed](#fixed)
+- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [TL;DR](#tldr-2)
+  - [Added](#added-2)
+
+## [1.2.0] - 2026-10-24
+
+### TL;DR
+
+- Application permissions: `Connect-MsalEssentials` can now sign in as the app itself with a certificate (`-Certificate`) or a client secret (`-ClientSecret`).
+- `Get-MsalEssentialsToken` renews application tokens too.
+- The parameter `-ClientID` is now spelled `-ClientId`. PowerShell ignores the letter case, so existing calls keep working.
+
+### Added
+
+- **Functions**
+  - New parameter sets `AppCertificate` and `AppSecret` on `Connect-MsalEssentials` (client credentials flow).
+    - `-Certificate` takes an `X509Certificate2` with a private key. A certificate without a private key is rejected.
+    - `-ClientSecret` takes a `SecureString`.
+    - `-Scopes` must be one scope that ends with `/.default`. The delegated-only parameters (`-RedirectUri`, `-TimeoutSeconds`, `-LoginHintUpn`) are not available in these sets.
+    - The connection has `AuthenticationType` `Application` and no `Username`.
+  - `Get-MsalEssentialsToken` renews an `Application` connection by requesting a new token with the same certificate or secret. There is no refresh token in this flow.
+  - New private function `Get-MsalEssentialsApplicationToken`: gets an application token (client credentials flow) with a certificate or a client secret through MSAL. Used by `Connect-MsalEssentials`.
+    - Failures become terminating errors with an `MsalEssentials.<Category>` error ID, a hint and the technical details in `TargetObject`, with hints for typical app errors (wrong or expired secret, certificate not uploaded, public client flows enabled, unknown tenant).
+- **Tests**
+  - Unit tests for application permissions (`02-ApplicationConnection.Tests.ps1`): both parameter sets, scope handling, private key check, rejected credentials (wrong secret, certificate not uploaded, app without credentials), renewal (forced refresh, scopes, failure with a valid or expired token) and `Disconnect-MsalEssentials`.
+  - Integration tests for application permissions (`02-ApplicationSignIn.Tests.ps1`) against a real tenant, without a browser: the same checks as the unit tests with real tokens, including the AADSTS codes of rejected credentials and a real renewal. Each part runs only when its app registration is configured (`MSAL_TEST_APP_SECRET_CLIENT_ID` / `MSAL_TEST_APP_SECRET`, `MSAL_TEST_APP_CERT_CLIENT_ID` / `MSAL_TEST_APP_CERT_THUMBPRINT`, `MSAL_TEST_APP_NO_CREDENTIALS_CLIENT_ID`, see the header of the file).
+- **Documentation**
+  - README: app registration steps for application permissions, in the same form as the delegated ones.
+  - README: "How to use it" now links to one complete example per sign-in type in [`docs/examples`](/docs/examples):
+    - [`Delegated-SystemBrowser.md`](/docs/examples/Delegated-SystemBrowser.md) (moved from the README)
+    - [`Application-Certificate.md`](/docs/examples/Application-Certificate.md)
+    - [`Application-ClientSecret.md`](/docs/examples/Application-ClientSecret.md)
+    - [`Create-TestCertificate.md`](/docs/examples/Create-TestCertificate.md): a self-signed certificate for testing
+  - New note [`ClientSecret-REST-Standalone.md`](/docs/notes/ClientSecret-REST-Standalone.md): minimal standalone example of the client secret flow with plain REST (no MSAL), followed by a Microsoft Graph request to `beta/users`.
+
+### Changed
+
+- Parameter `-ClientID` renamed to `-ClientId` (PascalCase, consistent with the `ClientId` property of the connection). Calls with `-ClientID` still work, because PowerShell parameter names are not case-sensitive.
+- `Get-MsalEssentialsToken`: the default of `-RefreshBeforeExpiryMinutes` is now 5 instead of 15, the same margin MSAL uses for its own token cache. Renewing less often means fewer token requests, which identity providers throttle when there are too many. Pass `-RefreshBeforeExpiryMinutes 15` to keep the old behavior.
+- The stored connection keeps the MSAL client in one `ClientApplication` key instead of one key per client type. Internal only: no change to commands, parameters or output.
 
 ## [1.1.1] - 2026-10-23
 

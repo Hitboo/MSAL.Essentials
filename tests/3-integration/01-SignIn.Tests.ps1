@@ -141,7 +141,7 @@ Describe 'MSAL.Essentials sign-in with a login hint for another account (real te
 
         $caught = $null
         try {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -LoginHintUpn 'user@hitboo.test' -TimeoutSeconds 7 -ErrorAction 'Stop'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -LoginHintUpn 'user@hitboo.test' -TimeoutSeconds 7 -ErrorAction 'Stop'
         }
         catch {
             $caught = $_
@@ -176,7 +176,7 @@ Describe 'MSAL.Essentials sign-in with a login hint for another account (real te
     ) {
         $caught = $null
         try {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientId -LoginHintUpn $Value -TimeoutSeconds 7 -ErrorAction 'Stop'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -LoginHintUpn $Value -TimeoutSeconds 7 -ErrorAction 'Stop'
         }
         catch {
             $caught = $_
@@ -205,7 +205,7 @@ Describe 'MSAL.Essentials sign-in (real tenant)' -Skip:$script:SkipSignIn {
     BeforeAll {
         Write-MsalTestBrowserNote -Total $script:BrowserWindowTotal -Action 'SignIn' -Description 'Normal sign-in (no hint). The tests below need this connection.' -Expected 'sign-in completes and the tests below pass.'
 
-        $script:Connection = Connect-MsalEssentials -PassThru -TenantId $script:TenantId -ClientID $script:ClientId -Scopes 'User.Read' -TimeoutSeconds 30 -ErrorAction 'Stop'
+        $script:Connection = Connect-MsalEssentials -PassThru -TenantId $script:TenantId -ClientId $script:ClientId -Scopes 'User.Read' -TimeoutSeconds 30 -ErrorAction 'Stop'
     }
 
     Context 'Connect-MsalEssentials' {
@@ -307,7 +307,7 @@ Describe 'MSAL.Essentials sign-in with a login hint (real tenant)' -Skip:$script
     BeforeAll {
         Write-MsalTestBrowserNote -Total $script:BrowserWindowTotal -Action 'SignIn' -Description ('Login hint "{0}": the username may be pre-filled. Sign in within 7 seconds.' -f $env:MSAL_TEST_LOGIN_HINT_UPN) -Expected 'any successful sign-in passes, the hint is optional. It will SSO if it is the account you already signed in with.'
 
-        $script:HintedConnection = Connect-MsalEssentials -PassThru -TenantId $script:TenantId -ClientID $script:ClientId -Scopes 'User.Read' -LoginHintUpn $env:MSAL_TEST_LOGIN_HINT_UPN -TimeoutSeconds 7 -ErrorAction 'Stop'
+        $script:HintedConnection = Connect-MsalEssentials -PassThru -TenantId $script:TenantId -ClientId $script:ClientId -Scopes 'User.Read' -LoginHintUpn $env:MSAL_TEST_LOGIN_HINT_UPN -TimeoutSeconds 7 -ErrorAction 'Stop'
     }
 
     AfterAll {
@@ -343,7 +343,7 @@ Describe 'MSAL.Essentials sign-in failures shown in the browser (real tenant)' -
 
         $caught = $null
         try {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID ([guid]::NewGuid().ToString()) -TimeoutSeconds 7 -ErrorAction 'Stop'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId ([guid]::NewGuid().ToString()) -TimeoutSeconds 7 -ErrorAction 'Stop'
         }
         catch {
             $caught = $_
@@ -375,7 +375,7 @@ Describe 'MSAL.Essentials sign-in failures shown in the browser (real tenant)' -
 
         $caught = $null
         try {
-            Connect-MsalEssentials -TenantId $script:TenantId -ClientID $script:ClientIdWithoutLocalhost -TimeoutSeconds 7 -ErrorAction 'Stop'
+            Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientIdWithoutLocalhost -TimeoutSeconds 7 -ErrorAction 'Stop'
         }
         catch {
             $caught = $_
