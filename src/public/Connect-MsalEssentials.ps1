@@ -162,10 +162,10 @@ function Connect-MsalEssentials {
         $PassThru
     )
 
-    $authenticationResult    = $null
-    $authenticationType      = $null
-    $publicClientApplication = $null
-    $requestedScopes         = $null
+    $authenticationResult = $null
+    $authenticationType   = $null
+    $clientApplication    = $null # public (delegated) or confidential (application) MSAL client
+    $requestedScopes      = $null
 
     switch ($PSCmdlet.ParameterSetName) {
         'DelegatedSystemBrowser' {
@@ -177,7 +177,7 @@ function Connect-MsalEssentials {
                 Scopes               = $requestedScopes
                 # Receives the MSAL client. Silent renewal needs the same client
                 # instance, because the refresh token lives in its in-memory cache.
-                ApplicationReference = [ref]$publicClientApplication
+                ApplicationReference = [ref]$clientApplication
             }
 
             # Only pass optional parameters that were actually supplied, so
@@ -224,12 +224,12 @@ function Connect-MsalEssentials {
     # AuthenticationResult is never returned from this function (see the note
     # in the helper about printing the full AuthenticationResult).
     $script:MsalEssentialsSession = @{
-        AuthenticationType      = $authenticationType
-        TenantId                = $TenantId # as supplied, reused if a new sign-in is needed
-        ClientId                = $ClientId
-        RequestedScopes         = $requestedScopes
-        PublicClientApplication = $publicClientApplication
-        AuthenticationResult    = $authenticationResult
+        AuthenticationType   = $authenticationType
+        TenantId             = $TenantId # as supplied, reused if a new sign-in is needed
+        ClientId             = $ClientId
+        RequestedScopes      = $requestedScopes
+        ClientApplication    = $clientApplication # the type follows AuthenticationType
+        AuthenticationResult = $authenticationResult
     }
 
     $username = if ($authenticationResult.Account) { $authenticationResult.Account.Username } else { $null }

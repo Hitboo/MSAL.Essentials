@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Parameter `-ClientID` renamed to `-ClientId` (PascalCase, consistent with the `ClientId` property of the connection). Calls with `-ClientID` still work, because PowerShell parameter names are not case-sensitive.
+- The stored connection keeps the MSAL client in one `ClientApplication` key instead of one key per client type. Internal only: no change to commands, parameters or output.
 
 ## [1.1.1] - 2026-10-23
 

@@ -98,7 +98,7 @@ function Get-MsalEssentialsToken {
             'Delegated' {
                 try {
                     # AcquireTokenSilent needs the scopes and the account from the original sign-in, which are stored in the session. 
-                    $session.AuthenticationResult = $session.PublicClientApplication.AcquireTokenSilent(
+                    $session.AuthenticationResult = $session.ClientApplication.AcquireTokenSilent(
                         [string[]]$session.RequestedScopes,
                         $session.AuthenticationResult.Account
                     ).WithForceRefresh(
