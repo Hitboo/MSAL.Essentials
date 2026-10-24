@@ -218,22 +218,12 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
                 )
         }
 
-        $authenticationResult = $tokenRequest.ExecuteAsync(
+        # Returns the full MSAL AuthenticationResult. Don't print it to the
+        # console: PowerShell's formatter walks its deep, self-referencing
+        # properties and can crash the process with a StackOverflowException.
+        return $tokenRequest.ExecuteAsync(
             $timeoutSource.Token
         ).GetAwaiter().GetResult()
-
-        # Deliberately not returning $authenticationResult, $authenticationResult.Account,
-        # or $authenticationResult.BindingCertificate - even partially, even via
-        # Select-Object -ExcludeProperty. PowerShell's console formatter walks an
-        # object's full property graph to print it, and these MSAL/.NET types carry
-        # deep and/or self-referencing structures (ClaimsPrincipal, TenantProfiles,
-        # certificate chain data) that can drive that walk into a genuine
-        # StackOverflowException - which crashes the process immediately and cannot
-        # be caught by any try/catch, even one wrapping the original call.
-        # Excluding a single named property isn't enough, since the remaining
-        # properties can still carry the same kind of depth. Every value below is
-        # drilled down to an actual string/bool/datetime leaf, never a nested object.
-        return $authenticationResult
 
         #endregion Acquire the token interactively
     }
