@@ -5,7 +5,7 @@
 Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview) wrapper.
 
 - Delegated permissions (sign in as a user through the system browser)
-- Application permissions (certificate or secret) **not implemented yet**
+- Application permissions (sign in as the app itself with a certificate or a client secret)
 - Managed Identity **not implemented yet**
 
 > [!NOTE]
@@ -109,6 +109,8 @@ Get-ChildItem -Path '.\MSAL.Essentials' -Recurse | Unblock-File
 
 ### App registration
 
+#### Delegated permissions (sign in as a user)
+
 The sign-in opens your default browser and receives the answer on a local `http://localhost` address. The app registration needs that redirect URI:
 
 1. Open the Microsoft Entra admin center, then **App registrations**, your app and **Authentication**.
@@ -120,58 +122,36 @@ For testing you can use the **Microsoft Graph Command Line Tools** app (client I
 
 To use another loopback address, for example a fixed port, pass `-RedirectUri 'http://localhost:1234'` to `Connect-MsalEssentials` and register the same URI. Only loopback addresses work with the system browser.
 
+#### Application permissions (sign in as the app)
+
+The app signs in as itself with a certificate or a client secret. No browser and no redirect URI are needed. The app registration needs a credential and application permissions:
+
+1. Open the Microsoft Entra admin center, then **App registrations**, your app and **Certificates & secrets**.
+2. Add a credential:
+   - **Certificates**: upload the public part (`.cer`) of a certificate whose private key you keep (recommended). See [Create a certificate for testing](docs/examples/Create-TestCertificate.md).
+   - **Client secrets**: create a secret and copy its **Value** right away. Entra ID shows it only once. The **Secret ID** does not work.
+3. Under **API permissions**, add the **application** permissions you need (not delegated ones) and choose **Grant admin consent**. Without consent a token is issued, but it has no roles and Microsoft Graph answers with `403`.
+4. Under **Authentication**, keep **Allow public client flows** set to **No**. Otherwise Entra ID rejects the certificate or secret.
+
+A certificate is the safer choice for production, because a secret is a shared password that can leak. Application permissions always use one scope that ends with `/.default`, for example `https://graph.microsoft.com/.default` (the default).
+
 ### How to use it
 
-```powershell
-# Install the module first, see "Install" above.
-Import-Module -Name 'MSAL.Essentials'
+Every example is a complete script: connect, call Microsoft Graph, clean up.
 
-#region Settings
-# The directory (tenant) ID or verified domain to authenticate against.
-[string]$TenantId = 'EXAMPLE.onmicrosoft.com'
-# The application (client) ID registered in Entra ID.
-[string]$ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # Microsoft Graph Command Line Tools (for testing)
-# Permission scopes to request. 'User.Read' is enough for the request below.
-# 'https://graph.microsoft.com/.default' returns all delegated permissions that are already granted to the app.
-[string[]]$Scopes = @('User.Read')
-#endregion Settings
-
-#region Connect to Microsoft Graph via MSAL.Essentials
-try {
-    # Get an MSAL token via the interactive system browser. The token is only kept in memory for this PowerShell session.
-    $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $TenantId -ClientId $ClientId -Scopes $Scopes -ErrorAction 'Stop'
-
-    # If the request might happen later or takes longer, make sure to have a valid token.
-    # Get-MsalEssentialsToken tries to get a new token silently if it expires in less than 5 minutes (the default).
-    $MsalEssentialsConnection = Get-MsalEssentialsToken -ErrorAction 'Stop'
-
-    $MicrosoftGraphRequest = @{
-        Uri     = 'https://graph.microsoft.com/beta/me' # Microsoft Graph endpoint to get info about the signed-in user.
-        Method  = 'GET'
-        Headers = @{ Authorization = $MsalEssentialsConnection.CreateAuthorizationHeader() } # Use the MSAL token to authorize the request.
-    }
-
-    # Invoke the Microsoft Graph request using the MSAL token.
-    $MicrosoftGraphResult = Invoke-RestMethod @MicrosoftGraphRequest
-    $MicrosoftGraphResult
-}
-catch {
-    Write-Warning -Message $_
-}
-finally {
-    # Clean up once done: clear the connection and remove the variable that holds the token.
-    Disconnect-MsalEssentials -InformationAction 'SilentlyContinue'
-    Remove-Variable -Name 'MsalEssentialsConnection' -ErrorAction 'SilentlyContinue'
-}
-#endregion Connect to Microsoft Graph via MSAL.Essentials
-```
+| Example | Sign in as | Use it for |
+| --- | --- | --- |
+| [Delegated sign-in through the browser](docs/examples/Delegated-SystemBrowser.md) | the current user | interactive scripts that act on behalf of a user |
+| [Application sign-in with a certificate](docs/examples/Application-Certificate.md) | the app itself | unattended scripts and automation (recommended) |
+| [Application sign-in with a client secret](docs/examples/Application-ClientSecret.md) | the app itself | quick tests, or where a certificate is not possible |
+| [Create a certificate for testing](docs/examples/Create-TestCertificate.md) | (setup) | a self-signed certificate for the certificate example |
 
 ### Commands
 
 | Command | What it does |
 | --- | --- |
-| `Connect-MsalEssentials` | Signs in as the current user through the default browser and keeps the connection in memory. `-PassThru` returns it, including the access token. |
-| `Get-MsalEssentialsToken` | Returns the connection with a valid token and renews it silently when it expires soon. It never signs in by itself. |
+| `Connect-MsalEssentials` | Signs in as the current user through the default browser, or as the app itself with `-Certificate` or `-ClientSecret`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
+| `Get-MsalEssentialsToken` | Returns the connection with a valid token and renews it when it expires soon. It never starts an interactive sign-in. |
 | `Disconnect-MsalEssentials` | Clears the connection and the MSAL token cache. |
 
 Parameters and examples: `Get-Help Connect-MsalEssentials -Full`.
@@ -184,8 +164,8 @@ Other errors come with a stable error ID in `$_.FullyQualifiedErrorId`. Details 
 
 | Error ID | Meaning |
 |---|---|
-| `MsalEssentials.AppConfiguration` | Redirect URI, app not found or invalid scope. |
-| `MsalEssentials.Unauthorized` | Consent is missing, the user is not assigned, or the account is not in the tenant. |
+| `MsalEssentials.AppConfiguration` | Redirect URI, app not found, invalid scope or tenant, or the app is set up as a public client (application permissions). |
+| `MsalEssentials.Unauthorized` | Consent is missing, the user is not assigned, the account is not in the tenant, or the client secret or certificate was rejected. |
 | `MsalEssentials.ConditionalAccess` | A policy asks for MFA, a compliant device or another condition. |
 | `MsalEssentials.Cancelled` | The sign-in was cancelled. |
 | `MsalEssentials.NotConnected` | There is no connection yet. Run `Connect-MsalEssentials`. |
