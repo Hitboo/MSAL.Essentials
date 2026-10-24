@@ -21,11 +21,21 @@
         terminating error for the command, so use -ErrorAction 'Stop' or
         try/catch in scripts to make sure nothing runs after a failed sign-in.
 
+        With -Certificate or -ClientSecret the app signs in as itself
+        (application permissions, client credentials flow) by calling
+        Get-MsalEssentialsApplicationToken. No user, browser or redirect URI
+        is involved. The token carries the application permissions that were
+        granted to the app and consented by an administrator. MSAL does not
+        issue a refresh token for this flow: Get-MsalEssentialsToken renews
+        the token by requesting a new one with the same certificate or secret.
+
         Currently supported:
             DelegatedSystemBrowser   interactive sign-in as a user (default)
+            AppCertificate           application permissions with a certificate
+            AppSecret                application permissions with a client secret
 
         Planned parameter sets (not implemented yet):
-            AppCertificate, AccessToken, ManagedIdentity
+            AccessToken, ManagedIdentity
 
     .PARAMETER TenantId
         The directory (tenant) ID or verified domain to authenticate against.
@@ -34,8 +44,13 @@
         The application (client) ID registered in Entra ID.
 
     .PARAMETER Scopes
-        The delegated scopes to request. Defaults to Microsoft Graph's default
-        scope set. The same scopes are used when the token is renewed.
+        The scopes to request. Defaults to Microsoft Graph's default scope set.
+        The same scopes are used when the token is renewed.
+
+        With -Certificate or -ClientSecret this must be exactly one scope that
+        ends with '/.default', for example 'https://graph.microsoft.com/.default'.
+        Application permissions are granted on the app registration, not
+        requested per call.
 
     .PARAMETER TimeoutSeconds
         How long to wait for the interactive sign-in to complete. If omitted,
@@ -79,6 +94,26 @@
         browser has no signed-in session; otherwise Entra ID uses the session
         (or its account picker) and the hint does not appear.
 
+    .PARAMETER Certificate
+        A certificate with a private key (X509Certificate2) to sign in as the
+        application. The public part (.cer) must be uploaded on the app
+        registration (Entra admin center > App registrations > your app >
+        Certificates & secrets > Certificates). Load it from the certificate
+        store with Get-ChildItem -Path 'Cert:\CurrentUser\My' or from a PFX
+        file with Get-PfxCertificate. The app needs application permissions
+        with admin consent, and no redirect URI.
+
+    .PARAMETER ClientSecret
+        The client secret value of the app registration as a SecureString, to
+        sign in as the application. Use the secret's Value (shown once when it
+        is created), not its Secret ID. A certificate is the safer choice for
+        production, because a secret is a shared password that can leak.
+
+        Create the SecureString without leaving the secret in the console
+        history, for example with Read-Host -AsSecureString or from a secret
+        store (Get-Secret). ConvertTo-SecureString -AsPlainText puts the plain
+        text into your script.
+
     .PARAMETER PassThru
         Returns the connection as an object with the properties
         AuthenticationType, TenantId, ClientId, Username, Scopes, ExpiresOn
@@ -107,6 +142,17 @@
         Listens on the fixed port 1234. 'http://localhost:1234' must be registered on the app.
 
     .EXAMPLE
+        $certificate = Get-ChildItem -Path 'Cert:\CurrentUser\My' |
+            Where-Object -FilterScript { $_.Thumbprint -eq $thumbprint }
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -Certificate $certificate
+        Signs in as the application with a certificate from the store (application permissions).
+
+    .EXAMPLE
+        $secret = Read-Host -Prompt 'Client secret' -AsSecureString
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -ClientSecret $secret -Scopes 'https://vault.azure.net/.default'
+        Signs in as the application with a client secret and requests an Azure Key Vault token.
+
+    .EXAMPLE
         try {
             $connection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientId $clientId -ErrorAction 'Stop'
 
@@ -129,7 +175,7 @@ function Connect-MsalEssentials {
     [OutputType('MsalEssentials.Connection')]
     param (
         # TenantId and ClientId have no parameter set, so they belong to every set.
-        # When app / managed identity sets are added, move them into the sets that need them.
+        # When the managed identity set is added, move them into the sets that need them.
         [Parameter(Mandatory)]
         [string]
         $TenantId,
@@ -138,9 +184,12 @@ function Connect-MsalEssentials {
         [string]
         $ClientId,
 
-        # Keep this default in sync with Get-MsalEssentialsDelegatedTokenSystemBrowser.
+        # Keep this default in sync with the helper functions.
         # It is needed here because the scopes are stored for silent token renewal.
+        # The app sets are validated in Get-MsalEssentialsApplicationToken.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(ParameterSetName = 'AppCertificate')]
+        [Parameter(ParameterSetName = 'AppSecret')]
         [string[]]
         $Scopes = @('https://graph.microsoft.com/.default'),
 
@@ -156,6 +205,20 @@ function Connect-MsalEssentials {
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [string]
         $LoginHintUpn,
+
+        [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
+        [ValidateScript({
+            if (-not $_.HasPrivateKey) {
+                throw 'The certificate has no private key. Load it with its private key, for example from the certificate store or from a PFX file.'
+            }
+            $true
+        })]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2]
+        $Certificate,
+
+        [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
+        [System.Security.SecureString]
+        $ClientSecret,
 
         [Parameter()]
         [switch]
@@ -201,9 +264,37 @@ function Connect-MsalEssentials {
             }
         }
 
+        { $_ -in 'AppCertificate', 'AppSecret' } {
+            $requestedScopes = [string[]]@($Scopes)
+
+            $tokenParameters = @{
+                TenantId             = $TenantId
+                ClientId             = $ClientId
+                Scopes               = $requestedScopes
+                # Receives the MSAL client. Renewal asks it for a new token, and
+                # it keeps the certificate or secret.
+                ApplicationReference = [ref]$clientApplication
+            }
+
+            if ($PSCmdlet.ParameterSetName -eq 'AppCertificate') {
+                $tokenParameters['Certificate'] = $Certificate
+            }
+            else {
+                $tokenParameters['ClientSecret'] = $ClientSecret
+            }
+
+            $authenticationType = 'Application'
+
+            try {
+                $authenticationResult = Get-MsalEssentialsApplicationToken @tokenParameters
+            }
+            catch {
+                $PSCmdlet.ThrowTerminatingError($_)
+            }
+        }
+
         # Future parameter sets go here, each setting $authenticationResult,
         # $authenticationType and $requestedScopes the same way:
-        #   'AppCertificate'  -> client credentials with a certificate
         #   'AccessToken'     -> use an access token that was obtained elsewhere
         #   'ManagedIdentity' -> managed identity endpoint
     }

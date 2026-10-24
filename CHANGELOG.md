@@ -26,7 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Functions**
-  - New private function `Get-MsalEssentialsApplicationToken`: gets an application token (client credentials flow) with a certificate or a client secret through MSAL. No command uses it yet.
+  - New parameter sets `AppCertificate` and `AppSecret` on `Connect-MsalEssentials` (client credentials flow).
+    - `-Certificate` takes an `X509Certificate2` with a private key. A certificate without a private key is rejected.
+    - `-ClientSecret` takes a `SecureString`.
+    - `-Scopes` must be one scope that ends with `/.default`. The delegated-only parameters (`-RedirectUri`, `-TimeoutSeconds`, `-LoginHintUpn`) are not available in these sets.
+    - The connection has `AuthenticationType` `Application` and no `Username`.
+  - New private function `Get-MsalEssentialsApplicationToken`: gets an application token (client credentials flow) with a certificate or a client secret through MSAL. Used by `Connect-MsalEssentials`.
     - Failures become terminating errors with an `MsalEssentials.<Category>` error ID, a hint and the technical details in `TargetObject`, with hints for typical app errors (wrong or expired secret, certificate not uploaded, public client flows enabled, unknown tenant).
 - **Documentation**
   - New note [`ClientSecret-REST-Standalone.md`](/docs/notes/ClientSecret-REST-Standalone.md): minimal standalone example of the client secret flow with plain REST (no MSAL), followed by a Microsoft Graph request to `beta/users`.
