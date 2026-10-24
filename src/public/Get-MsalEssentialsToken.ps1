@@ -6,11 +6,15 @@
     .DESCRIPTION
         Looks at the connection stored by Connect-MsalEssentials:
 
-        1. Token expires in more than -RefreshBeforeExpiryMinutes (default 15):
+        1. Token expires in more than -RefreshBeforeExpiryMinutes (default 5):
            returns the stored token unchanged.
         2. Token expires in -RefreshBeforeExpiryMinutes or less: gets a new
-           token silently, without opening a browser, using the MSAL client
-           and refresh token kept from the original sign-in.
+           token without opening a browser, using the MSAL client kept from
+           the original connection:
+             - Delegated: silently, with the refresh token from the sign-in.
+             - Application (-Certificate / -ClientSecret): by requesting a new
+               token with the same certificate or secret. There is no refresh
+               token for this flow.
 
         This function never signs in. It does not open a browser, and it does
         not take a tenant, client or credentials. Signing in is the job of
@@ -42,7 +46,8 @@
 
     .PARAMETER RefreshBeforeExpiryMinutes
         Renew the token when it expires within this many minutes. Defaults
-        to 15. Use 0 to renew only once the token has expired.
+        to 5, the same margin MSAL uses for its own token cache. Use 0 to renew
+        only once the token has expired.
 
     .EXAMPLE
         Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId
@@ -72,7 +77,7 @@ function Get-MsalEssentialsToken {
         [Parameter()]
         [ValidateRange(0, 1440)]
         [int]
-        $RefreshBeforeExpiryMinutes = 15
+        $RefreshBeforeExpiryMinutes = 5
     )
 
     $session = Get-Variable -Name 'MsalEssentialsSession' -Scope 'Script' -ValueOnly -ErrorAction 'SilentlyContinue'
@@ -113,8 +118,26 @@ function Get-MsalEssentialsToken {
                 }
             }
 
+            'Application' {
+                try {
+                    # AcquireTokenForClient needs the scopes from the original request, which are stored in the session.
+                    $session.AuthenticationResult = $session.ClientApplication.AcquireTokenForClient(
+                        [string[]]$session.RequestedScopes
+                    ).WithForceRefresh(
+                        $true
+                        # ForceRefresh skips the cached app token, which MSAL would otherwise return until it expires in less than 5 minutes.
+                        # MSAL warns that identity providers throttle clients that make too many similar token requests. This only runs
+                        # inside the renewal window (-RefreshBeforeExpiryMinutes, default 5) and the new token is fresh again afterwards.
+                        # A window as long as the token lifetime (about 60 minutes) would force a new token on every call.
+                        # See https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.acquiretokenforclientparameterbuilder.withforcerefresh?view=msal-dotnet-latest#remarks
+                    ).ExecuteAsync().GetAwaiter().GetResult()
+                }
+                catch {
+                    $renewalError = $_
+                }
+            }
+
             # Future authentication types are renewed here, for example:
-            #   'AppCertificate'  -> call AcquireTokenForClient again
             #   'ManagedIdentity' -> request a new token from the endpoint
             # Renewal must never start an interactive sign-in.
             default {

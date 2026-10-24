@@ -333,8 +333,8 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
                 Should -Be 'Bearer initial-access-token'
         }
 
-        It 'does not renew a token that has more than 15 minutes left' {
-            New-MsalTestScenario -ExpiresInMinutes 60
+        It 'does not renew a token that has more than 5 minutes left' {
+            New-MsalTestScenario -ExpiresInMinutes 10
             Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $token = Get-MsalEssentialsToken
@@ -347,8 +347,8 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
     }
 
     Context 'Silent renewal' {
-        It 'renews silently when the token expires within 15 minutes' {
-            New-MsalTestScenario -ExpiresInMinutes 10
+        It 'renews silently when the token expires within 5 minutes' {
+            New-MsalTestScenario -ExpiresInMinutes 3
             $connection = Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -PassThru
 
             $token = Get-MsalEssentialsToken
@@ -362,7 +362,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'forces a refresh so MSAL does not return the cached token' {
-            New-MsalTestScenario -ExpiresInMinutes 10
+            New-MsalTestScenario -ExpiresInMinutes 3
             Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
@@ -372,7 +372,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'renews with the scopes the connection was created with' {
-            New-MsalTestScenario -ExpiresInMinutes 10
+            New-MsalTestScenario -ExpiresInMinutes 3
             Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId -Scopes 'Mail.Read'
 
             $null = Get-MsalEssentialsToken
@@ -382,7 +382,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'does not renew again once the renewed token is fresh' {
-            New-MsalTestScenario -ExpiresInMinutes 10 -RenewedExpiresInMinutes 60
+            New-MsalTestScenario -ExpiresInMinutes 3 -RenewedExpiresInMinutes 60
             Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
@@ -408,7 +408,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'never starts a sign-in while renewing' {
-            New-MsalTestScenario -ExpiresInMinutes 10
+            New-MsalTestScenario -ExpiresInMinutes 3
             Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $null = Get-MsalEssentialsToken
@@ -418,7 +418,7 @@ Describe 'MSAL.Essentials connection commands (simulated)' {
         }
 
         It 'returns the current token with a warning when renewal fails but the token is still valid' {
-            New-MsalTestScenario -ExpiresInMinutes 10 -SilentFailure ([System.InvalidOperationException]::new('network down'))
+            New-MsalTestScenario -ExpiresInMinutes 3 -SilentFailure ([System.InvalidOperationException]::new('network down'))
             Connect-MsalEssentials -TenantId $script:TenantId -ClientId $script:ClientId
 
             $token = Get-MsalEssentialsToken -WarningVariable renewalWarning -WarningAction SilentlyContinue

@@ -142,7 +142,7 @@ try {
     $MsalEssentialsConnection = Connect-MsalEssentials -PassThru -TenantId $TenantId -ClientId $ClientId -Scopes $Scopes -ErrorAction 'Stop'
 
     # If the request might happen later or takes longer, make sure to have a valid token.
-    # Get-MsalEssentialsToken tries to get a new token silently if it expires in less than 15 minutes (the default).
+    # Get-MsalEssentialsToken tries to get a new token silently if it expires in less than 5 minutes (the default).
     $MsalEssentialsConnection = Get-MsalEssentialsToken -ErrorAction 'Stop'
 
     $MicrosoftGraphRequest = @{

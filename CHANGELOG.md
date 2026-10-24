@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `-ClientSecret` takes a `SecureString`.
     - `-Scopes` must be one scope that ends with `/.default`. The delegated-only parameters (`-RedirectUri`, `-TimeoutSeconds`, `-LoginHintUpn`) are not available in these sets.
     - The connection has `AuthenticationType` `Application` and no `Username`.
+  - `Get-MsalEssentialsToken` renews an `Application` connection by requesting a new token with the same certificate or secret. There is no refresh token in this flow.
   - New private function `Get-MsalEssentialsApplicationToken`: gets an application token (client credentials flow) with a certificate or a client secret through MSAL. Used by `Connect-MsalEssentials`.
     - Failures become terminating errors with an `MsalEssentials.<Category>` error ID, a hint and the technical details in `TargetObject`, with hints for typical app errors (wrong or expired secret, certificate not uploaded, public client flows enabled, unknown tenant).
 - **Documentation**
@@ -39,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Parameter `-ClientID` renamed to `-ClientId` (PascalCase, consistent with the `ClientId` property of the connection). Calls with `-ClientID` still work, because PowerShell parameter names are not case-sensitive.
+- `Get-MsalEssentialsToken`: the default of `-RefreshBeforeExpiryMinutes` is now 5 instead of 15, the same margin MSAL uses for its own token cache. Renewing less often means fewer token requests, which identity providers throttle when there are too many. Pass `-RefreshBeforeExpiryMinutes 15` to keep the old behavior.
 - The stored connection keeps the MSAL client in one `ClientApplication` key instead of one key per client type. Internal only: no change to commands, parameters or output.
 
 ## [1.1.1] - 2026-10-23
