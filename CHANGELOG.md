@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Get-MsalEssentialsToken` renews an `Application` connection by requesting a new token with the same certificate or secret. There is no refresh token in this flow.
   - New private function `Get-MsalEssentialsApplicationToken`: gets an application token (client credentials flow) with a certificate or a client secret through MSAL. Used by `Connect-MsalEssentials`.
     - Failures become terminating errors with an `MsalEssentials.<Category>` error ID, a hint and the technical details in `TargetObject`, with hints for typical app errors (wrong or expired secret, certificate not uploaded, public client flows enabled, unknown tenant).
+- **Tests**
+  - Unit tests for application permissions (`02-ApplicationConnection.Tests.ps1`): both parameter sets, scope handling, private key check, rejected credentials (wrong secret, certificate not uploaded, app without credentials), renewal (forced refresh, scopes, failure with a valid or expired token) and `Disconnect-MsalEssentials`.
 - **Documentation**
   - New note [`ClientSecret-REST-Standalone.md`](/docs/notes/ClientSecret-REST-Standalone.md): minimal standalone example of the client secret flow with plain REST (no MSAL), followed by a Microsoft Graph request to `beta/users`.
 
