@@ -103,15 +103,18 @@ function Get-MsalEssentialsToken {
             'Delegated' {
                 try {
                     # AcquireTokenSilent needs the scopes and the account from the original sign-in, which are stored in the session. 
-                    $session.AuthenticationResult = $session.ClientApplication.AcquireTokenSilent(
-                        [string[]]$session.RequestedScopes,
-                        $session.AuthenticationResult.Account
-                    ).WithForceRefresh(
-                        $true 
-                        # ForceRefresh is needed to get a new token. 
-                        # Otherwise MSAL only returns a token if the expiration is less than 5 minutes away, which is not enough for this function.
-                        # See https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=msal-dotnet-latest#remarks
-                    ).ExecuteAsync().GetAwaiter().GetResult()
+                    # Wait-MsalEssentialsTask keeps the wait from deadlocking on a UI thread (WPF, WinForms).
+                    $session.AuthenticationResult = Wait-MsalEssentialsTask -ScriptBlock {
+                        $session.ClientApplication.AcquireTokenSilent(
+                            [string[]]$session.RequestedScopes,
+                            $session.AuthenticationResult.Account
+                        ).WithForceRefresh(
+                            $true
+                            # ForceRefresh is needed to get a new token.
+                            # Otherwise MSAL only returns a token if the expiration is less than 5 minutes away, which is not enough for this function.
+                            # See https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.clientapplicationbase.acquiretokensilent?view=msal-dotnet-latest#remarks
+                        ).ExecuteAsync()
+                    }
                 }
                 catch {
                     $renewalError = $_
@@ -121,16 +124,19 @@ function Get-MsalEssentialsToken {
             'Application' {
                 try {
                     # AcquireTokenForClient needs the scopes from the original request, which are stored in the session.
-                    $session.AuthenticationResult = $session.ClientApplication.AcquireTokenForClient(
-                        [string[]]$session.RequestedScopes
-                    ).WithForceRefresh(
-                        $true
-                        # ForceRefresh skips the cached app token, which MSAL would otherwise return until it expires in less than 5 minutes.
-                        # MSAL warns that identity providers throttle clients that make too many similar token requests. This only runs
-                        # inside the renewal window (-RefreshBeforeExpiryMinutes, default 5) and the new token is fresh again afterwards.
-                        # A window as long as the token lifetime (about 60 minutes) would force a new token on every call.
-                        # See https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.acquiretokenforclientparameterbuilder.withforcerefresh?view=msal-dotnet-latest#remarks
-                    ).ExecuteAsync().GetAwaiter().GetResult()
+                    # Wait-MsalEssentialsTask keeps the wait from deadlocking on a UI thread (WPF, WinForms).
+                    $session.AuthenticationResult = Wait-MsalEssentialsTask -ScriptBlock {
+                        $session.ClientApplication.AcquireTokenForClient(
+                            [string[]]$session.RequestedScopes
+                        ).WithForceRefresh(
+                            $true
+                            # ForceRefresh skips the cached app token, which MSAL would otherwise return until it expires in less than 5 minutes.
+                            # MSAL warns that identity providers throttle clients that make too many similar token requests. This only runs
+                            # inside the renewal window (-RefreshBeforeExpiryMinutes, default 5) and the new token is fresh again afterwards.
+                            # A window as long as the token lifetime (about 60 minutes) would force a new token on every call.
+                            # See https://learn.microsoft.com/en-us/dotnet/api/microsoft.identity.client.acquiretokenforclientparameterbuilder.withforcerefresh?view=msal-dotnet-latest#remarks
+                        ).ExecuteAsync()
+                    }
                 }
                 catch {
                     $renewalError = $_

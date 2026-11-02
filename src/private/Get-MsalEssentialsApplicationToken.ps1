@@ -138,9 +138,12 @@ function Get-MsalEssentialsApplicationToken {
         # Returns the full MSAL AuthenticationResult. Don't print it to the
         # console: PowerShell's formatter walks its deep, self-referencing
         # properties and can crash the process with a StackOverflowException.
-        return $confidentialClientApplication.AcquireTokenForClient(
-            [string[]]$Scopes
-        ).ExecuteAsync().GetAwaiter().GetResult()
+        # Wait-MsalEssentialsTask keeps the wait from deadlocking on a UI thread (WPF, WinForms).
+        return Wait-MsalEssentialsTask -ScriptBlock {
+            $confidentialClientApplication.AcquireTokenForClient(
+                [string[]]$Scopes
+            ).ExecuteAsync()
+        }
     }
     catch {
         #region exception handling
