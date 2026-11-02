@@ -6,19 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[Unreleased\]](#unreleased)
+  - [Added](#added)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr)
-  - [Added](#added)
+  - [Added](#added-1)
   - [Changed](#changed)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-1)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-1)
-  - [Added](#added-1)
+  - [Added](#added-2)
   - [Fixed](#fixed)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-2)
-  - [Added](#added-2)
+  - [Added](#added-3)
+
+## [Unreleased]
+
+### Added
+
+- **Functions**
+  - New private function `Wait-MsalEssentialsTask`: waits on an MSAL task without the calling thread's `SynchronizationContext`, so MSAL can't post its continuation back to a blocked UI thread (WPF Dispatcher, WinForms). It replaces `.GetAwaiter().GetResult()` for waits on a UI thread (issue #16).
 
 ## [1.2.0] - 2026-10-24
 
