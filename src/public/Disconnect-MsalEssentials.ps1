@@ -71,10 +71,11 @@ function Disconnect-MsalEssentials {
     # no user account to remove; dropping its client clears its token cache.
     if ($session.AuthenticationType -eq 'Delegated' -and $session.ClientApplication) {
         try {
-            $accounts = $session.ClientApplication.GetAccountsAsync().GetAwaiter().GetResult()
+            # Wait-MsalEssentialsTask keeps the waits from deadlocking on a UI thread (WPF, WinForms).
+            $accounts = Wait-MsalEssentialsTask -ScriptBlock { $session.ClientApplication.GetAccountsAsync() }
             foreach ($account in $accounts) {
                 # Discard the VoidTaskResult that RemoveAsync returns, so it isn't written to the pipeline.
-                $null = $session.ClientApplication.RemoveAsync($account).GetAwaiter().GetResult()
+                $null = Wait-MsalEssentialsTask -ScriptBlock { $session.ClientApplication.RemoveAsync($account) }
             }
         }
         catch {

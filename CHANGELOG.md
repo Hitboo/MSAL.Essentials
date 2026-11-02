@@ -6,19 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
+- [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr)
   - [Added](#added)
+  - [Fixed](#fixed)
+- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
+  - [TL;DR](#tldr-1)
+  - [Added](#added-1)
   - [Changed](#changed)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-1)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-1)
-  - [Added](#added-1)
-  - [Fixed](#fixed)
-- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-2)
   - [Added](#added-2)
+  - [Fixed](#fixed-1)
+- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [TL;DR](#tldr-3)
+  - [Added](#added-3)
+
+## [1.2.1] - 2026-11-02
+
+### TL;DR
+
+- Fixed: the second `Connect-MsalEssentials` (Connect > Disconnect > Connect) no longer freezes when the module runs on a UI thread, such as a WPF or WinForms app (issue #16). The console was not affected.
+- All waits on MSAL now go through the new private function `Wait-MsalEssentialsTask`.
+- New unit and integration tests for this case. No changes to commands, parameters or output.
+
+### Added
+
+- **Functions**
+  - New private function `Wait-MsalEssentialsTask`: waits on an MSAL task without the calling thread's `SynchronizationContext`, so MSAL can't post its continuation back to a blocked UI thread (WPF Dispatcher, WinForms). It replaces `.GetAwaiter().GetResult()` for waits on a UI thread (issue #16).
+- **Documentation**
+  - README, "Also good to know": the module works on a UI thread (WPF, WinForms), but that thread is blocked while an interactive sign-in runs.
+- **Tests**
+  - Unit tests for the UI thread deadlock (`2-unit/03-UiThreadDeadlock.Tests.ps1`), without a tenant, browser or network: `Wait-MsalEssentialsTask` itself, a real MSAL system browser sign-in on a simulated UI thread, Connect > Disconnect > Connect through the commands, and a source check that every MSAL wait uses `Wait-MsalEssentialsTask`.
+  - Integration test for the same sequence (`3-integration/03-UiThreadDeadlock.Tests.ps1`) on a real WPF Dispatcher against a real tenant. It runs in a child process (`probes/Invoke-DispatcherSequence.ps1`) with a watchdog and reports each step, so a deadlock fails the test instead of hanging the run. Skipped unless `MSAL_TEST_TENANT_ID` is set.
+
+### Fixed
+
+- `Connect-MsalEssentials` no longer freezes on the second delegated sign-in (Connect > Disconnect > Connect) when it runs on a UI thread, such as a WPF Dispatcher or a WinForms app (issue #16). The console host was not affected.
+  - Cause: MSAL's system browser sign-in posts its continuation back to the calling thread's `SynchronizationContext`, which was blocked in `.GetAwaiter().GetResult()`. The first sign-in in a process escaped this because of MSAL's instance discovery request; from the second one on, the UI thread deadlocked.
+  - All waits on MSAL now go through `Wait-MsalEssentialsTask`: the interactive and application sign-in, the silent renewal in `Get-MsalEssentialsToken`, and the account removal in `Disconnect-MsalEssentials`. Only the interactive sign-in was affected; the others are covered as a precaution.
+  - While a sign-in runs, the UI thread is still blocked until it completes or `-TimeoutSeconds` elapses.
 
 ## [1.2.0] - 2026-10-24
 

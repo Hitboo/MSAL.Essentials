@@ -83,6 +83,7 @@ Also good to know:
 - The module compiles a small C# helper when it is imported, so it does not support PowerShell's Constrained Language Mode.
 - It is tested on Windows with Windows PowerShell 5.1 and PowerShell 7. Linux and macOS are not tested.
 - Tokens are only kept in memory for the current PowerShell session. Nothing is written to disk.
+- It works from a UI thread, such as a WPF or WinForms app (fixed in 1.2.1). An interactive sign-in blocks the calling thread until it completes or `-TimeoutSeconds` runs out, so the window shows "Not responding" meanwhile. To keep the window responsive, run the sign-in outside the UI thread.
 - Most failed sign-ins show up as a timeout. See [Troubleshooting](#troubleshooting).
 
 ### Install
