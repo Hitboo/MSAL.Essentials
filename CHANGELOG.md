@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [\[Unreleased\]](#unreleased)
   - [Added](#added)
+  - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr)
   - [Added](#added-1)
@@ -17,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-1)
   - [Added](#added-2)
-  - [Fixed](#fixed)
+  - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-2)
   - [Added](#added-3)
@@ -28,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Functions**
   - New private function `Wait-MsalEssentialsTask`: waits on an MSAL task without the calling thread's `SynchronizationContext`, so MSAL can't post its continuation back to a blocked UI thread (WPF Dispatcher, WinForms). It replaces `.GetAwaiter().GetResult()` for waits on a UI thread (issue #16).
+
+### Fixed
+
+- `Connect-MsalEssentials` no longer freezes on the second delegated sign-in (Connect > Disconnect > Connect) when it runs on a UI thread, such as a WPF Dispatcher or a WinForms app (issue #16). The console host was not affected.
+  - Cause: MSAL's system browser sign-in posts its continuation back to the calling thread's `SynchronizationContext`, which was blocked in `.GetAwaiter().GetResult()`. The first sign-in in a process escaped this because of MSAL's instance discovery request; from the second one on, the UI thread deadlocked.
+  - All waits on MSAL now go through `Wait-MsalEssentialsTask`: the interactive and application sign-in, the silent renewal in `Get-MsalEssentialsToken`, and the account removal in `Disconnect-MsalEssentials`. Only the interactive sign-in was affected; the others are covered as a precaution.
+  - While a sign-in runs, the UI thread is still blocked until it completes or `-TimeoutSeconds` elapses.
 
 ## [1.2.0] - 2026-10-24
 

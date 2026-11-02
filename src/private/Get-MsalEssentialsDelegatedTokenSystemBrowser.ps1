@@ -221,9 +221,12 @@ function Get-MsalEssentialsDelegatedTokenSystemBrowser {
         # Returns the full MSAL AuthenticationResult. Don't print it to the
         # console: PowerShell's formatter walks its deep, self-referencing
         # properties and can crash the process with a StackOverflowException.
-        return $tokenRequest.ExecuteAsync(
-            $timeoutSource.Token
-        ).GetAwaiter().GetResult()
+        # Wait-MsalEssentialsTask keeps the wait from deadlocking on a UI thread (WPF, WinForms).
+        return Wait-MsalEssentialsTask -ScriptBlock {
+            $tokenRequest.ExecuteAsync(
+                $timeoutSource.Token
+            )
+        }
 
         #endregion Acquire the token interactively
     }
