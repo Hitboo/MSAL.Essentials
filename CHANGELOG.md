@@ -7,23 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents<!-- omit from toc -->
 
 - [\[Unreleased\]](#unreleased)
+  - [TL;DR](#tldr)
   - [Added](#added)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
-  - [TL;DR](#tldr)
+  - [TL;DR](#tldr-1)
   - [Added](#added-1)
   - [Changed](#changed)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-1)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-1)
+  - [TL;DR](#tldr-2)
   - [Added](#added-2)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
-  - [TL;DR](#tldr-2)
+  - [TL;DR](#tldr-3)
   - [Added](#added-3)
 
 ## [Unreleased]
+
+### TL;DR
+
+- Fixed: the second `Connect-MsalEssentials` (Connect > Disconnect > Connect) no longer freezes when the module runs on a UI thread, such as a WPF or WinForms app (issue #16). The console was not affected.
+- All waits on MSAL now go through the new private function `Wait-MsalEssentialsTask`.
+- New unit and integration tests for this case. No changes to commands, parameters or output.
 
 ### Added
 
