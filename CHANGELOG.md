@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Functions**
   - New private function `Wait-MsalEssentialsTask`: waits on an MSAL task without the calling thread's `SynchronizationContext`, so MSAL can't post its continuation back to a blocked UI thread (WPF Dispatcher, WinForms). It replaces `.GetAwaiter().GetResult()` for waits on a UI thread (issue #16).
+- **Tests**
+  - Unit tests for the UI thread deadlock (`2-unit/03-UiThreadDeadlock.Tests.ps1`), without a tenant, browser or network: `Wait-MsalEssentialsTask` itself, a real MSAL system browser sign-in on a simulated UI thread, Connect > Disconnect > Connect through the commands, and a source check that every MSAL wait uses `Wait-MsalEssentialsTask`.
+  - Integration test for the same sequence (`3-integration/03-UiThreadDeadlock.Tests.ps1`) on a real WPF Dispatcher against a real tenant. It runs in a child process (`probes/Invoke-DispatcherSequence.ps1`) with a watchdog and reports each step, so a deadlock fails the test instead of hanging the run. Skipped unless `MSAL_TEST_TENANT_ID` is set.
 
 ### Fixed
 
