@@ -6,25 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[Unreleased\]](#unreleased)
+  - [Added](#added)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr)
-  - [Added](#added)
+  - [Added](#added-1)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-1)
-  - [Added](#added-1)
+  - [Added](#added-2)
   - [Changed](#changed-1)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-2)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-2)
-  - [Added](#added-2)
+  - [Added](#added-3)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-3)
-  - [Added](#added-3)
+  - [Added](#added-4)
+
+## [Unreleased]
+
+### Added
+
+- **Documentation**
+  - New note [`Auth-Types.md`](/docs/notes/Auth-Types.md): a beginner's guide to the Microsoft Entra ID sign-in types (service principal with a secret or certificate, managed identity, workload identity federation, interactive sign-in, WAM broker). For each type it explains where to use it and links the Microsoft Learn pages to set it up. It also lists the abbreviations used and which types the module supports today.
 
 ## [1.2.2] - 2026-11-04
 
