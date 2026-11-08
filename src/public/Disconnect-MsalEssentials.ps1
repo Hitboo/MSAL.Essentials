@@ -69,6 +69,12 @@ function Disconnect-MsalEssentials {
     # stop the session from being cleared.
     # Only delegated connections have accounts. An application connection has
     # no user account to remove; dropping its client clears its token cache.
+    # A managed identity connection has no account either. MSAL keeps its
+    # tokens in a cache shared by the whole process, which this module can't
+    # clear, so a new Connect-MsalEssentials -ManagedIdentity in the same
+    # process may get the cached token back. That token belongs to the
+    # resource the process runs on, not to a user, so it is not a sign-in
+    # that survives the disconnect.
     if ($session.AuthenticationType -eq 'Delegated' -and $session.ClientApplication) {
         try {
             # Wait-MsalEssentialsTask keeps the waits from deadlocking on a UI thread (WPF, WinForms).

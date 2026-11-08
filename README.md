@@ -6,7 +6,7 @@ Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.m
 
 - Delegated permissions (sign in as a user through the system browser)
 - Application permissions (sign in as the app itself with a certificate or a client secret)
-- Managed Identity **not implemented yet**
+- Managed identity (sign in as the Azure resource the code runs on, system- or user-assigned)
 
 > [!NOTE]
 > **👋 First open source project**  

@@ -6,25 +6,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
+  - [TL;DR](#tldr)
+  - [Added](#added)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
-  - [TL;DR](#tldr)
-  - [Added](#added)
-  - [Fixed](#fixed)
-- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-1)
   - [Added](#added-1)
+  - [Fixed](#fixed)
+- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
+  - [TL;DR](#tldr-2)
+  - [Added](#added-2)
   - [Changed](#changed-1)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-2)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-2)
-  - [Added](#added-2)
-  - [Fixed](#fixed-1)
-- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-3)
   - [Added](#added-3)
+  - [Fixed](#fixed-1)
+- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [TL;DR](#tldr-4)
+  - [Added](#added-4)
+
+## [1.3.0] - 2026-11-08
+
+### TL;DR
+
+- Managed identity: `Connect-MsalEssentials -ManagedIdentity` signs in as the Azure resource the code runs on, with its system-assigned identity or, with `-ClientId`, a user-assigned one. No secret, certificate or browser is needed.
+- `Get-MsalEssentialsToken` renews managed identity tokens too.
+- Tested on an Azure VM in Windows PowerShell 5.1 and PowerShell 7.
+
+### Added
+
+- **Managed identity sign-in**
+  - `Connect-MsalEssentials -ManagedIdentity` signs in as the managed identity of the Azure resource the code runs on (Azure VM, App Service, Azure Functions, Azure Arc-enabled server, ...). No tenant, secret, certificate or browser is needed.
+    - Without `-ClientId` the system-assigned identity is used, with `-ClientId` the user-assigned identity with that client ID.
+    - `-Identity` is accepted as an alias, as in `Connect-AzAccount` and `Connect-MgGraph`.
+    - `-Scopes` takes exactly one scope that ends with `/.default`, like the application sign-in.
+    - On a computer without a managed identity it fails with `MsalEssentials.ManagedIdentityUnavailable` and a hint. A user-assigned identity that is not assigned to the resource fails with `MsalEssentials.AppConfiguration`.
+  - `Get-MsalEssentialsToken` renews a managed identity token by asking the endpoint for a new one.
+  - The connection shows `AuthenticationType` `ManagedIdentity`, no `TenantId` (MSAL only reports a placeholder) and the client ID of a user-assigned identity.
+  - New private helper `Get-MsalEssentialsManagedIdentityToken`: gets the token for a system- or user-assigned managed identity and maps MSAL errors to `MsalEssentials.*` errors with hints, including the managed identity source (`Imds`, `AppService`, ...).
+  - `-TenantId` and `-ClientId` of `Connect-MsalEssentials` now belong to the parameter sets that need them, so they are no longer accepted with `-ManagedIdentity` (`-TenantId`) or are optional there (`-ClientId`). Existing calls are unchanged.
+- **Tests**
+  - Unit tests for managed identity connections with a mocked helper (`tests/2-unit/04-ManagedIdentityConnection.Tests.ps1`).
+  - Tests of the helper with the real MSAL library against simulated App Service and IMDS managed identity endpoints on localhost (`tests/2-unit/05-ManagedIdentityEndpoint.Tests.ps1`).
+  - Integration tests to run on an Azure VM with a system- and a user-assigned identity (`tests/3-integration/04-ManagedIdentitySignIn.Tests.ps1`).
+- **Documentation**
+  - New note [`Auth-Types.md`](/docs/notes/Auth-Types.md): a beginner's guide to the Microsoft Entra ID sign-in types (service principal with a secret or certificate, managed identity, workload identity federation, interactive sign-in, WAM broker). For each type it explains where to use it and links the Microsoft Learn pages to set it up. It also lists the abbreviations used and which types the module supports today.
 
 ## [1.2.2] - 2026-11-04
 
