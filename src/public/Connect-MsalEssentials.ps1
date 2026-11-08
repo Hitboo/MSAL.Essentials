@@ -29,27 +29,47 @@
         issue a refresh token for this flow: Get-MsalEssentialsToken renews
         the token by requesting a new one with the same certificate or secret.
 
+        With -ManagedIdentity the code signs in as the managed identity of
+        the Azure resource it runs on (Azure VM, App Service, Azure Functions,
+        Azure Arc-enabled server, ...) by calling
+        Get-MsalEssentialsManagedIdentityToken. No tenant, secret, certificate
+        or browser is needed: the host proves who it is. Without -ClientId the
+        system-assigned identity is used, with -ClientId the user-assigned
+        identity with that client ID. On a computer without a managed
+        identity, such as a laptop, this fails with
+        MsalEssentials.ManagedIdentityUnavailable. Get-MsalEssentialsToken
+        renews the token by asking the endpoint for a new one.
+
         Currently supported:
             DelegatedSystemBrowser   interactive sign-in as a user (default)
             AppCertificate           application permissions with a certificate
             AppSecret                application permissions with a client secret
+            ManagedIdentity          managed identity of the Azure resource
 
         Planned parameter sets (not implemented yet):
-            AccessToken, ManagedIdentity
+            AccessToken
 
     .PARAMETER TenantId
         The directory (tenant) ID or verified domain to authenticate against.
+        Not used with -ManagedIdentity: the identity belongs to the tenant of
+        the Azure resource.
 
     .PARAMETER ClientId
         The application (client) ID registered in Entra ID.
+
+        With -ManagedIdentity it is optional and selects a user-assigned
+        managed identity by its client ID (Azure portal > Managed Identities >
+        your identity > Overview > Client ID, not the Object ID). Omit it to
+        use the system-assigned managed identity.
 
     .PARAMETER Scopes
         The scopes to request. Defaults to Microsoft Graph's default scope set.
         The same scopes are used when the token is renewed.
 
-        With -Certificate or -ClientSecret this must be exactly one scope that
-        ends with '/.default', for example 'https://graph.microsoft.com/.default'.
-        Application permissions are granted on the app registration, not
+        With -Certificate, -ClientSecret or -ManagedIdentity this must be
+        exactly one scope that ends with '/.default', for example
+        'https://graph.microsoft.com/.default'. Application permissions are
+        granted on the app registration (or to the managed identity), not
         requested per call.
 
     .PARAMETER TimeoutSeconds
@@ -114,6 +134,17 @@
         store (Get-Secret). ConvertTo-SecureString -AsPlainText puts the plain
         text into your script.
 
+    .PARAMETER ManagedIdentity
+        Signs in as the managed identity of the Azure resource this code runs
+        on. Add -ClientId for a user-assigned identity. The identity needs
+        permissions on the target: an Azure RBAC role, or application
+        permissions for APIs such as Microsoft Graph (granted with PowerShell
+        or the Graph API, because a managed identity has no app registration
+        page in the portal).
+
+        -Identity is accepted as an alias, as in Connect-AzAccount and
+        Connect-MgGraph.
+
     .PARAMETER PassThru
         Returns the connection as an object with the properties
         AuthenticationType, TenantId, ClientId, Username, Scopes, ExpiresOn
@@ -153,6 +184,14 @@
         Signs in as the application with a client secret and requests an Azure Key Vault token.
 
     .EXAMPLE
+        Connect-MsalEssentials -ManagedIdentity
+        On an Azure resource: signs in with its system-assigned managed identity and gets a Microsoft Graph token.
+
+    .EXAMPLE
+        Connect-MsalEssentials -ManagedIdentity -ClientId $userAssignedClientId -Scopes 'https://vault.azure.net/.default'
+        On an Azure resource: signs in with a user-assigned managed identity and gets an Azure Key Vault token.
+
+    .EXAMPLE
         try {
             $connection = Connect-MsalEssentials -PassThru -TenantId $tenantId -ClientId $clientId -ErrorAction 'Stop'
 
@@ -174,22 +213,29 @@ function Connect-MsalEssentials {
     [CmdletBinding(DefaultParameterSetName = 'DelegatedSystemBrowser')]
     [OutputType('MsalEssentials.Connection')]
     param (
-        # TenantId and ClientId have no parameter set, so they belong to every set.
-        # When the managed identity set is added, move them into the sets that need them.
-        [Parameter(Mandatory)]
+        # A managed identity needs no tenant, and its client ID is optional
+        # (system-assigned without, user-assigned with), so both are only
+        # mandatory in the other sets.
+        [Parameter(Mandatory, ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
+        [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
         [string]
         $TenantId,
 
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
+        [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
+        [Parameter(ParameterSetName = 'ManagedIdentity')]
         [string]
         $ClientId,
 
         # Keep this default in sync with the helper functions.
         # It is needed here because the scopes are stored for silent token renewal.
-        # The app sets are validated in Get-MsalEssentialsApplicationToken.
+        # The app and managed identity sets are validated in their helpers.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [Parameter(ParameterSetName = 'AppCertificate')]
         [Parameter(ParameterSetName = 'AppSecret')]
+        [Parameter(ParameterSetName = 'ManagedIdentity')]
         [string[]]
         $Scopes = @('https://graph.microsoft.com/.default'),
 
@@ -220,6 +266,11 @@ function Connect-MsalEssentials {
         [System.Security.SecureString]
         $ClientSecret,
 
+        [Parameter(Mandatory, ParameterSetName = 'ManagedIdentity')]
+        [Alias('Identity')]
+        [switch]
+        $ManagedIdentity,
+
         [Parameter()]
         [switch]
         $PassThru
@@ -227,7 +278,7 @@ function Connect-MsalEssentials {
 
     $authenticationResult = $null
     $authenticationType   = $null
-    $clientApplication    = $null # public (delegated) or confidential (application) MSAL client
+    $clientApplication    = $null # public (delegated), confidential (application) or managed identity MSAL client
     $requestedScopes      = $null
 
     switch ($PSCmdlet.ParameterSetName) {
@@ -293,10 +344,33 @@ function Connect-MsalEssentials {
             }
         }
 
+        'ManagedIdentity' {
+            $requestedScopes = [string[]]@($Scopes)
+
+            $tokenParameters = @{
+                Scopes               = $requestedScopes
+                # Receives the MSAL client. Renewal asks it for a new token.
+                ApplicationReference = [ref]$clientApplication
+            }
+
+            # Without a client ID, the helper uses the system-assigned identity.
+            if ($PSBoundParameters.ContainsKey('ClientId')) {
+                $tokenParameters['ClientId'] = $ClientId
+            }
+
+            $authenticationType = 'ManagedIdentity'
+
+            try {
+                $authenticationResult = Get-MsalEssentialsManagedIdentityToken @tokenParameters
+            }
+            catch {
+                $PSCmdlet.ThrowTerminatingError($_)
+            }
+        }
+
         # Future parameter sets go here, each setting $authenticationResult,
         # $authenticationType and $requestedScopes the same way:
         #   'AccessToken'     -> use an access token that was obtained elsewhere
-        #   'ManagedIdentity' -> managed identity endpoint
     }
 
     if (-not $authenticationResult -or [string]::IsNullOrEmpty($authenticationResult.AccessToken)) {
@@ -316,8 +390,8 @@ function Connect-MsalEssentials {
     # in the helper about printing the full AuthenticationResult).
     $script:MsalEssentialsSession = @{
         AuthenticationType   = $authenticationType
-        TenantId             = $TenantId # as supplied, reused if a new sign-in is needed
-        ClientId             = $ClientId
+        TenantId             = $TenantId # as supplied (empty for a managed identity), reused if a new sign-in is needed
+        ClientId             = $ClientId # empty for a system-assigned managed identity
         RequestedScopes      = $requestedScopes
         ClientApplication    = $clientApplication # the type follows AuthenticationType
         AuthenticationResult = $authenticationResult
@@ -327,7 +401,7 @@ function Connect-MsalEssentials {
 
     Write-Verbose -Message (
         'Connected as {0} ({1}), token expires {2}.' -f
-            $(if ($username) { $username } else { 'application' }),
+            $(if ($username) { $username } elseif ($authenticationType -eq 'ManagedIdentity') { 'managed identity' } else { 'application' }),
             $authenticationType,
             $authenticationResult.ExpiresOn
     )

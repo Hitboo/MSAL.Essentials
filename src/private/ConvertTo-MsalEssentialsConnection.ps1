@@ -31,10 +31,14 @@ function ConvertTo-MsalEssentialsConnection {
     $authenticationResult = $Session.AuthenticationResult
     $username             = if ($authenticationResult.Account) { $authenticationResult.Account.Username } else { $null }
 
+    # For a managed identity MSAL reports the placeholder 'managed_identity'
+    # instead of a tenant ID, so show no tenant rather than a wrong one.
+    $tenantId = if ($Session.AuthenticationType -eq 'ManagedIdentity') { $null } else { $authenticationResult.TenantId }
+
     $connection = [pscustomobject]@{
         PSTypeName         = 'MsalEssentials.Connection'
         AuthenticationType = $Session.AuthenticationType
-        TenantId           = $authenticationResult.TenantId
+        TenantId           = $tenantId
         ClientId           = $Session.ClientId
         Username           = $username
         Scopes             = @($authenticationResult.Scopes)
