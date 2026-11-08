@@ -15,6 +15,8 @@
              - Application (-Certificate / -ClientSecret): by requesting a new
                token with the same certificate or secret. There is no refresh
                token for this flow.
+             - ManagedIdentity (-ManagedIdentity): by requesting a new token
+               from the managed identity endpoint of the Azure resource.
 
         This function never signs in. It does not open a browser, and it does
         not take a tenant, client or credentials. Signing in is the job of
@@ -143,8 +145,29 @@ function Get-MsalEssentialsToken {
                 }
             }
 
-            # Future authentication types are renewed here, for example:
-            #   'ManagedIdentity' -> request a new token from the endpoint
+            'ManagedIdentity' {
+                try {
+                    # AcquireTokenForManagedIdentity takes the one scope (resource) from the original request.
+                    # Wait-MsalEssentialsTask keeps the wait from deadlocking on a UI thread (WPF, WinForms).
+                    $session.AuthenticationResult = Wait-MsalEssentialsTask -ScriptBlock {
+                        $session.ClientApplication.AcquireTokenForManagedIdentity(
+                            [string]$session.RequestedScopes[0]
+                        ).WithForceRefresh(
+                            $true
+                            # Same reason as for 'Application': without it MSAL returns its cached token until that
+                            # expires in less than 5 minutes. Managed identity tokens usually live for hours, so this
+                            # only runs close to expiry with the default window. The endpoints throttle clients that
+                            # ask too often, so don't use a window close to the token lifetime.
+                            # See https://learn.microsoft.com/en-us/entra/msal/dotnet/advanced/managed-identity
+                        ).ExecuteAsync()
+                    }
+                }
+                catch {
+                    $renewalError = $_
+                }
+            }
+
+            # Future authentication types are renewed here.
             # Renewal must never start an interactive sign-in.
             default {
                 $renewalError = [System.Management.Automation.ErrorRecord]::new(

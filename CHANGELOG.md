@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `-Identity` is accepted as an alias, as in `Connect-AzAccount` and `Connect-MgGraph`.
     - `-Scopes` takes exactly one scope that ends with `/.default`, like the application sign-in.
     - On a computer without a managed identity it fails with `MsalEssentials.ManagedIdentityUnavailable` and a hint. A user-assigned identity that is not assigned to the resource fails with `MsalEssentials.AppConfiguration`.
+  - `Get-MsalEssentialsToken` renews a managed identity token by asking the endpoint for a new one.
   - The connection shows `AuthenticationType` `ManagedIdentity`, no `TenantId` (MSAL only reports a placeholder) and the client ID of a user-assigned identity.
   - New private helper `Get-MsalEssentialsManagedIdentityToken`: gets the token for a system- or user-assigned managed identity and maps MSAL errors to `MsalEssentials.*` errors with hints, including the managed identity source (`Imds`, `AppService`, ...).
   - `-TenantId` and `-ClientId` of `Connect-MsalEssentials` now belong to the parameter sets that need them, so they are no longer accepted with `-ManagedIdentity` (`-TenantId`) or are optional there (`-ClientId`). Existing calls are unchanged.
