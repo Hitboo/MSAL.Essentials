@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests**
   - Unit tests for managed identity connections with a mocked helper (`tests/2-unit/04-ManagedIdentityConnection.Tests.ps1`).
   - Tests of the helper with the real MSAL library against simulated App Service and IMDS managed identity endpoints on localhost (`tests/2-unit/05-ManagedIdentityEndpoint.Tests.ps1`).
+  - Integration tests to run on an Azure VM with a system- and a user-assigned identity (`tests/3-integration/04-ManagedIdentitySignIn.Tests.ps1`).
 - **Documentation**
   - New note [`Auth-Types.md`](/docs/notes/Auth-Types.md): a beginner's guide to the Microsoft Entra ID sign-in types (service principal with a secret or certificate, managed identity, workload identity federation, interactive sign-in, WAM broker). For each type it explains where to use it and links the Microsoft Learn pages to set it up. It also lists the abbreviations used and which types the module supports today.
 
