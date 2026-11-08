@@ -6,29 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[Unreleased\]](#unreleased)
+- [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
+  - [TL;DR](#tldr)
   - [Added](#added)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
-  - [TL;DR](#tldr)
+  - [TL;DR](#tldr-1)
   - [Added](#added-1)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
-  - [TL;DR](#tldr-1)
+  - [TL;DR](#tldr-2)
   - [Added](#added-2)
   - [Changed](#changed-1)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-2)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-2)
+  - [TL;DR](#tldr-3)
   - [Added](#added-3)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
-  - [TL;DR](#tldr-3)
+  - [TL;DR](#tldr-4)
   - [Added](#added-4)
 
-## [Unreleased]
+## [1.3.0] - 2026-11-08
+
+### TL;DR
+
+- Managed identity: `Connect-MsalEssentials -ManagedIdentity` signs in as the Azure resource the code runs on, with its system-assigned identity or, with `-ClientId`, a user-assigned one. No secret, certificate or browser is needed.
+- `Get-MsalEssentialsToken` renews managed identity tokens too.
+- Tested on an Azure VM in Windows PowerShell 5.1 and PowerShell 7.
 
 ### Added
 
