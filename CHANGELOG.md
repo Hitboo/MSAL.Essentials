@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The connection shows `AuthenticationType` `ManagedIdentity`, no `TenantId` (MSAL only reports a placeholder) and the client ID of a user-assigned identity.
   - New private helper `Get-MsalEssentialsManagedIdentityToken`: gets the token for a system- or user-assigned managed identity and maps MSAL errors to `MsalEssentials.*` errors with hints, including the managed identity source (`Imds`, `AppService`, ...).
   - `-TenantId` and `-ClientId` of `Connect-MsalEssentials` now belong to the parameter sets that need them, so they are no longer accepted with `-ManagedIdentity` (`-TenantId`) or are optional there (`-ClientId`). Existing calls are unchanged.
+- **Tests**
+  - Unit tests for managed identity connections with a mocked helper (`tests/2-unit/04-ManagedIdentityConnection.Tests.ps1`).
+  - Tests of the helper with the real MSAL library against simulated App Service and IMDS managed identity endpoints on localhost (`tests/2-unit/05-ManagedIdentityEndpoint.Tests.ps1`).
 - **Documentation**
   - New note [`Auth-Types.md`](/docs/notes/Auth-Types.md): a beginner's guide to the Microsoft Entra ID sign-in types (service principal with a secret or certificate, managed identity, workload identity federation, interactive sign-in, WAM broker). For each type it explains where to use it and links the Microsoft Learn pages to set it up. It also lists the abbreviations used and which types the module supports today.
 
