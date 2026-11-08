@@ -186,7 +186,7 @@ There are two common variants:
 | Auth type | Who it is | Secret to manage? | Use it when… | In the repo |
 |---|---|---|---|---|
 | Service principal (cert/secret) | App | **Yes** | Nothing better fits, or local dev | ✅ Done |
-| Managed identity | Azure resource or Arc server | No | Code runs in Azure or on an Arc server | Not yet |
+| Managed identity | Azure resource or Arc server | No | Code runs in Azure or on an Arc server | ✅ Done |
 | Workload identity federation | App, trusted via an external issuer | No | GitHub Actions, Azure DevOps, Kubernetes, other clouds | Not yet |
 | Interactive | User | No | A human runs the tool | ✅ Done |
 | WAM broker | User (Windows account) | No | Windows desktop, SSO with the Windows account | Not yet |
