@@ -6,7 +6,7 @@ name: Release
 # Rehearsal: Actions > Release > Run workflow, on develop or main. It runs the tests and builds
 # the package, but creates no release and publishes nothing.
 #
-# Order: tests -> package -> GitHub release -> PowerShell Gallery. The Gallery step comes last
+# Order: tests and vulnerability audit -> package -> GitHub release -> PowerShell Gallery. The Gallery step comes last
 # because a published version can't be deleted from the Gallery, only unlisted. It stays switched
 # off until you create the repository variable PUBLISH_TO_GALLERY with the value 'true'.
 
@@ -78,9 +78,41 @@ jobs:
         shell: pwsh
         run: ./tests/Start-Test.ps1 -TestsPath ./tests/2-unit
 
+  # The weekly dependency check runs only on Mondays. This audit makes sure that a release never ships
+  # bundled libraries with a known vulnerability, whenever it happens. A newer MSAL.NET does not block.
+  audit-dependencies:
+    name: Vulnerability audit (bundled libraries)
+    if: github.event_name == 'push' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check the bundled libraries for known vulnerabilities
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $result = ./build/Test-MsalLibDependencies.ps1
+
+          foreach ($finding in $result.Findings) {
+            $level = if ($result.BlockingFindings -contains $finding) { 'error' } else { 'warning' }
+            Write-Host ('::{0}::{1} [{2}] {3}' -f $level, $finding.Target, $finding.Severity, $finding.Message)
+          }
+
+          if ($result.BlockingFindings.Count -gt 0) {
+            throw ('{0} blocking finding(s) in the bundled libraries. Update them with build/Update-MsalLibDependencies.ps1 before releasing.' -f $result.BlockingFindings.Count)
+          }
+
+          'No blocking vulnerabilities in the bundled libraries ({0} {1}).' -f $result.PackageId, $result.BundledVersion
+
   package:
     name: Build the module package
-    needs: [test-powershell-51, test-powershell-7]
+    needs: [test-powershell-51, test-powershell-7, audit-dependencies]
     runs-on: windows-latest
     timeout-minutes: 15
 

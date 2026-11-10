@@ -136,6 +136,17 @@ The app signs in as itself with a certificate or a client secret. No browser and
 
 A certificate is the safer choice for production, because a secret is a shared password that can leak. Application permissions always use one scope that ends with `/.default`, for example `https://graph.microsoft.com/.default` (the default).
 
+#### Managed identity (sign in as the Azure resource)
+
+A managed identity needs no app registration, no credential and no redirect URI. Azure manages it for the resource the code runs on.
+
+1. Turn on the managed identity of the resource, for example in the Azure portal under your VM > **Identity**. A system-assigned identity belongs to that one resource. A user-assigned identity is created under **Managed Identities** and can be attached to several resources.
+2. Give the identity permissions on the target:
+   - **Azure resources** (Key Vault, Storage, ...): add an Azure role under **Access control (IAM)** of the resource.
+   - **Microsoft Graph and other APIs**: grant application permissions with the Microsoft Graph API. The portal has no **API permissions** page for a managed identity. See [Grant Microsoft Graph permissions to a managed identity](docs/examples/Grant-ManagedIdentityGraphPermission.md).
+
+Like application permissions, a managed identity uses one scope that ends with `/.default`.
+
 ### How to use it
 
 Every example is a complete script: connect, call Microsoft Graph, clean up.
@@ -145,13 +156,15 @@ Every example is a complete script: connect, call Microsoft Graph, clean up.
 | [Delegated sign-in through the browser](docs/examples/Delegated-SystemBrowser.md) | the current user | interactive scripts that act on behalf of a user |
 | [Application sign-in with a certificate](docs/examples/Application-Certificate.md) | the app itself | unattended scripts and automation (recommended) |
 | [Application sign-in with a client secret](docs/examples/Application-ClientSecret.md) | the app itself | quick tests, or where a certificate is not possible |
+| [Managed identity sign-in](docs/examples/ManagedIdentity.md) | the Azure resource (system- or user-assigned identity) | scripts that run on an Azure VM, App Service, Azure Functions or an Azure Arc-enabled server |
 | [Create a certificate for testing](docs/examples/Create-TestCertificate.md) | (setup) | a self-signed certificate for the certificate example |
+| [Grant Microsoft Graph permissions to a managed identity](docs/examples/Grant-ManagedIdentityGraphPermission.md) | (setup) | the application permission `User.Read.All` for the managed identity example |
 
 ### Commands
 
 | Command | What it does |
 | --- | --- |
-| `Connect-MsalEssentials` | Signs in as the current user through the default browser, or as the app itself with `-Certificate` or `-ClientSecret`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
+| `Connect-MsalEssentials` | Signs in as the current user through the default browser, as the app itself with `-Certificate` or `-ClientSecret`, or as the Azure resource with `-ManagedIdentity`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
 | `Get-MsalEssentialsToken` | Returns the connection with a valid token and renews it when it expires soon. It never starts an interactive sign-in. |
 | `Disconnect-MsalEssentials` | Clears the connection and the MSAL token cache. |
 
@@ -169,6 +182,7 @@ Other errors come with a stable error ID in `$_.FullyQualifiedErrorId`. Details 
 | `MsalEssentials.Unauthorized` | Consent is missing, the user is not assigned, the account is not in the tenant, or the client secret or certificate was rejected. |
 | `MsalEssentials.ConditionalAccess` | A policy asks for MFA, a compliant device or another condition. |
 | `MsalEssentials.Cancelled` | The sign-in was cancelled. |
+| `MsalEssentials.ManagedIdentityUnavailable` | No managed identity was found. The code doesn't run on an Azure resource, or its managed identity is turned off. |
 | `MsalEssentials.NotConnected` | There is no connection yet. Run `Connect-MsalEssentials`. |
 | `MsalEssentials.ReconnectRequired` | The token expired and can't be renewed silently. Run `Connect-MsalEssentials` again. |
 
