@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[Unreleased\]](#unreleased)
+- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
   - [Added](#added)
   - [Changed](#changed)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - [TL;DR](#tldr-4)
   - [Added](#added-5)
 
-## [Unreleased]
+## [1.3.1] - 2026-11-10
 
 ### Added
 
