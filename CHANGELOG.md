@@ -8,11 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [\[Unreleased\]](#unreleased)
   - [Added](#added)
+  - [Changed](#changed)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
   - [TL;DR](#tldr)
   - [Added](#added-1)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
-  - [Changed](#changed)
+  - [Changed](#changed-1)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr-1)
   - [Added](#added-2)
@@ -20,9 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-2)
   - [Added](#added-3)
-  - [Changed](#changed-1)
-- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-2)
+- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
+  - [Changed](#changed-3)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-3)
   - [Added](#added-4)
@@ -39,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New example [Managed identity sign-in](/docs/examples/ManagedIdentity.md): signs in with the system-assigned or a user-assigned managed identity and lists users from Microsoft Graph.
   - New example [Grant Microsoft Graph permissions to a managed identity](/docs/examples/Grant-ManagedIdentityGraphPermission.md): grants the application permission `User.Read.All` to a managed identity with the Microsoft Graph API, signed in through MSAL.Essentials. The portal can't do this, because a managed identity has no app registration.
   - README: managed identity setup under App registration, both examples under How to use it, `-ManagedIdentity` under Commands and `MsalEssentials.ManagedIdentityUnavailable` under Troubleshooting.
+
+### Changed
+
+- **Release workflow**
+  - A release now checks the bundled libraries for known vulnerabilities before it builds the package (`build/Test-MsalLibDependencies.ps1`, the same check as the weekly dependency check). A finding of severity Moderate or higher, or an audit that could not run, stops the release. A newer MSAL.NET version does not.
 
 ## [1.3.0] - 2026-11-08
 
