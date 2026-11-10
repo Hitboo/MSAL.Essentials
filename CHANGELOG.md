@@ -6,28 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[Unreleased\]](#unreleased)
+  - [Added](#added)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
   - [TL;DR](#tldr)
-  - [Added](#added)
+  - [Added](#added-1)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr-1)
-  - [Added](#added-1)
+  - [Added](#added-2)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-2)
-  - [Added](#added-2)
+  - [Added](#added-3)
   - [Changed](#changed-1)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-2)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-3)
-  - [Added](#added-3)
+  - [Added](#added-4)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-4)
-  - [Added](#added-4)
+  - [Added](#added-5)
+
+## [Unreleased]
+
+### Added
+
+- **Documentation**
+  - New example [Managed identity sign-in](/docs/examples/ManagedIdentity.md): signs in with the system-assigned or a user-assigned managed identity and lists users from Microsoft Graph.
+  - New example [Grant Microsoft Graph permissions to a managed identity](/docs/examples/Grant-ManagedIdentityGraphPermission.md): grants the application permission `User.Read.All` to a managed identity with the Microsoft Graph API, signed in through MSAL.Essentials. The portal can't do this, because a managed identity has no app registration.
+  - README: managed identity setup under App registration, both examples under How to use it, `-ManagedIdentity` under Commands and `MsalEssentials.ManagedIdentityUnavailable` under Troubleshooting.
 
 ## [1.3.0] - 2026-11-08
 
