@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Device code sign-in (not recommended, for compatibility only)**
+  - `Connect-MsalEssentials -UseDeviceCode` (alias `-DeviceCode`, as in `Connect-MgGraph`) signs in as a user with a device code: you open the page from the message on any device, enter the code and sign in there.
+    - Takes `-TenantId`, `-ClientId`, `-Scopes` and `-TimeoutSeconds` (default 300 seconds, at most 900, the usual lifetime of a device code). No redirect URI is needed, but the app registration needs **Allow public client flows**.
+    - The connection is `Delegated`, so `Get-MsalEssentialsToken` renews it silently (no new device code) and `Disconnect-MsalEssentials` clears it, as after a browser sign-in.
+    - Not recommended: device codes are a common phishing method, and Microsoft recommends blocking the device code flow wherever possible, so many tenants block it with Conditional Access. The help says so.
   - New private helper `Get-MsalEssentialsDelegatedTokenDeviceCode`: gets a delegated token with the device code flow and maps MSAL errors to `MsalEssentials.*` errors with hints, for example `AADSTS7000218` (public client flows not allowed) to `MsalEssentials.AppConfiguration`, `AADSTS53003` (blocked by Conditional Access) to `MsalEssentials.ConditionalAccess`, a declined sign-in to `MsalEssentials.Cancelled` and an expired code to `MsalEssentials.Timeout`.
   - New private helper `Wait-MsalEssentialsDeviceCodeTask`: shows the device code message with `Write-Host`, copies the code to the clipboard where one is available, and waits for the sign-in without deadlocking a UI thread. The MSAL callback is a small C# class, compiled on first use, because MSAL calls it on a thread without a PowerShell runspace.
 - **Tests**

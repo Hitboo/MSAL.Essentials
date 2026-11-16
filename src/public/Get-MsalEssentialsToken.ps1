@@ -11,7 +11,9 @@
         2. Token expires in -RefreshBeforeExpiryMinutes or less: gets a new
            token without opening a browser, using the MSAL client kept from
            the original connection:
-             - Delegated: silently, with the refresh token from the sign-in.
+             - Delegated (browser or -UseDeviceCode): silently, with the
+               refresh token from the sign-in. No browser and no new device
+               code.
              - Application (-Certificate / -ClientSecret): by requesting a new
                token with the same certificate or secret. There is no refresh
                token for this flow.
