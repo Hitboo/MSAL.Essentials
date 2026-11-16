@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New private helper `Wait-MsalEssentialsDeviceCodeTask`: shows the device code message with `Write-Host`, copies the code to the clipboard where one is available, and waits for the sign-in without deadlocking a UI thread. The MSAL callback is a small C# class, compiled on first use, because MSAL calls it on a thread without a PowerShell runspace.
 - **Tests**
   - Unit tests for device code connections with a mocked helper (`tests/2-unit/06-DeviceCodeConnection.Tests.ps1`), and for the device code helpers with simulated MSAL errors and tasks (`tests/2-unit/07-DeviceCodeHelper.Tests.ps1`). The UI-thread unit tests (`03-UiThreadDeadlock.Tests.ps1`) also cover `Wait-MsalEssentialsDeviceCodeTask`.
+  - Interactive integration tests against a real tenant, skipped unless `MSAL_TEST_TENANT_ID` is set: `tests/3-integration/05-DeviceCodeSignIn.Tests.ps1` covers the timeout, a declined sign-in, an app without public client flows (`AADSTS7000218`, with `MSAL_TEST_CLIENT_ID_NO_LOCALHOST`), the sign-in, renewal and disconnect. The WPF Dispatcher test (`03-UiThreadDeadlock.Tests.ps1`) now runs its Connect > Disconnect > Connect sequence with `-UseDeviceCode` too, and shows the child's output while it runs.
   - The UI-thread source test now also allows `Wait-MsalEssentialsDeviceCodeTask`, which clears the SynchronizationContext the same way as `Wait-MsalEssentialsTask`.
 
 ## [1.3.1] - 2026-11-10

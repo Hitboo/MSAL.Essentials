@@ -11,6 +11,7 @@
         starts, so the test can tell where it hung:
             STEP <number> <description>
             CONTEXT <SynchronizationContext type>
+            INFO <message>   (for example the device code message)
             PASSED
             FAILED <message>
 
@@ -27,7 +28,12 @@
         Passed to Connect-MsalEssentials -TimeoutSeconds.
 
     .PARAMETER LoginHintUpn
-        Optional. Passed to Connect-MsalEssentials -LoginHintUpn.
+        Optional. Passed to Connect-MsalEssentials -LoginHintUpn. Ignored
+        with -UseDeviceCode.
+
+    .PARAMETER UseDeviceCode
+        Signs in with Connect-MsalEssentials -UseDeviceCode instead of the
+        browser. The device code message is written as an INFO line.
 #>
 param (
     [Parameter(Mandatory)]
@@ -42,7 +48,9 @@ param (
     [Parameter(Mandatory)]
     [int]$SignInTimeoutSeconds,
 
-    [string]$LoginHintUpn
+    [string]$LoginHintUpn,
+
+    [switch]$UseDeviceCode
 )
 
 # Write-Host inside the Dispatcher callback is not reliably flushed when the
@@ -66,8 +74,19 @@ $connectParameters = @{
     TimeoutSeconds = $SignInTimeoutSeconds
     ErrorAction    = 'Stop'
 }
-if (-not [string]::IsNullOrWhiteSpace($LoginHintUpn)) {
+if ($UseDeviceCode) {
+    $connectParameters['UseDeviceCode'] = $true
+}
+elseif (-not [string]::IsNullOrWhiteSpace($LoginHintUpn)) {
     $connectParameters['LoginHintUpn'] = $LoginHintUpn
+}
+
+# Connect-MsalEssentials writes nothing to the pipeline without -PassThru.
+# 6>&1 turns the host output (the device code message) into pipeline
+# output, so it reaches standard output as soon as it is written.
+function Invoke-SequenceConnect {
+    Connect-MsalEssentials @connectParameters 6>&1 |
+        ForEach-Object -Process { Write-SequenceLine -Line ('INFO {0}' -f $_) }
 }
 
 $dispatcher = [System.Windows.Threading.Dispatcher]::CurrentDispatcher
@@ -77,7 +96,7 @@ $null = $dispatcher.BeginInvoke([System.Action]{
         Write-SequenceLine -Line ('CONTEXT {0}' -f [System.Threading.SynchronizationContext]::Current.GetType().FullName)
 
         Write-SequenceLine -Line 'STEP 1 Connect (first sign-in)'
-        Connect-MsalEssentials @connectParameters
+        Invoke-SequenceConnect
 
         Write-SequenceLine -Line 'STEP 2 Get-MsalEssentialsToken with silent renewal'
         $null = Get-MsalEssentialsToken -RefreshBeforeExpiryMinutes 1440 -ErrorAction 'Stop'
@@ -87,7 +106,7 @@ $null = $dispatcher.BeginInvoke([System.Action]{
 
         # Before the fix, this is where the UI thread deadlocks.
         Write-SequenceLine -Line 'STEP 4 Connect again (second sign-in)'
-        Connect-MsalEssentials @connectParameters
+        Invoke-SequenceConnect
 
         Write-SequenceLine -Line 'STEP 5 Disconnect'
         Disconnect-MsalEssentials -InformationAction 'SilentlyContinue' -ErrorAction 'Stop'
