@@ -435,13 +435,15 @@ Describe 'MSAL.Essentials on a UI thread' {
     }
 
     Context 'Source' {
-        It 'waits on MSAL tasks only through Wait-MsalEssentialsTask' {
+        It 'waits on MSAL tasks only through Wait-MsalEssentialsTask or Wait-MsalEssentialsDeviceCodeTask' {
             # A direct GetAwaiter() in any other function would block a UI
             # thread again. This also covers the interactive sign-in in
             # Get-MsalEssentialsDelegatedTokenSystemBrowser, which the tests
             # above can't run without opening a browser.
+            # Wait-MsalEssentialsDeviceCodeTask clears the context the same way;
+            # it is tested in 07-DeviceCodeHelper.Tests.ps1.
             $directWaits = Get-ChildItem -Path $script:SourcePath -Filter '*.ps1' -Recurse |
-                Where-Object -FilterScript { $_.BaseName -ne 'Wait-MsalEssentialsTask' } |
+                Where-Object -FilterScript { $_.BaseName -notin 'Wait-MsalEssentialsTask', 'Wait-MsalEssentialsDeviceCodeTask' } |
                 ForEach-Object -Process {
                     $fileName = $_.Name
                     $syntaxTree = [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$null)

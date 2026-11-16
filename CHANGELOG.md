@@ -6,31 +6,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
+- [\[Unreleased\]](#unreleased)
   - [Added](#added)
+- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
+  - [Added](#added-1)
   - [Changed](#changed)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
   - [TL;DR](#tldr)
-  - [Added](#added-1)
+  - [Added](#added-2)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed-1)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr-1)
-  - [Added](#added-2)
+  - [Added](#added-3)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-2)
-  - [Added](#added-3)
+  - [Added](#added-4)
   - [Changed](#changed-2)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-3)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-3)
-  - [Added](#added-4)
+  - [Added](#added-5)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-4)
-  - [Added](#added-5)
+  - [Added](#added-6)
+
+## [Unreleased]
+
+### Added
+
+- **Device code sign-in (not recommended, for compatibility only)**
+  - New private helper `Get-MsalEssentialsDelegatedTokenDeviceCode`: gets a delegated token with the device code flow and maps MSAL errors to `MsalEssentials.*` errors with hints, for example `AADSTS7000218` (public client flows not allowed) to `MsalEssentials.AppConfiguration`, `AADSTS53003` (blocked by Conditional Access) to `MsalEssentials.ConditionalAccess`, a declined sign-in to `MsalEssentials.Cancelled` and an expired code to `MsalEssentials.Timeout`.
+  - New private helper `Wait-MsalEssentialsDeviceCodeTask`: shows the device code message with `Write-Host`, copies the code to the clipboard where one is available, and waits for the sign-in without deadlocking a UI thread. The MSAL callback is a small C# class, compiled on first use, because MSAL calls it on a thread without a PowerShell runspace.
+- **Tests**
+  - The UI-thread source test now also allows `Wait-MsalEssentialsDeviceCodeTask`, which clears the SynchronizationContext the same way as `Wait-MsalEssentialsTask`.
 
 ## [1.3.1] - 2026-11-10
 
