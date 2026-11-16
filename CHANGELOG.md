@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New private helper `Get-MsalEssentialsDelegatedTokenDeviceCode`: gets a delegated token with the device code flow and maps MSAL errors to `MsalEssentials.*` errors with hints, for example `AADSTS7000218` (public client flows not allowed) to `MsalEssentials.AppConfiguration`, `AADSTS53003` (blocked by Conditional Access) to `MsalEssentials.ConditionalAccess`, a declined sign-in to `MsalEssentials.Cancelled` and an expired code to `MsalEssentials.Timeout`.
   - New private helper `Wait-MsalEssentialsDeviceCodeTask`: shows the device code message with `Write-Host`, copies the code to the clipboard where one is available, and waits for the sign-in without deadlocking a UI thread. The MSAL callback is a small C# class, compiled on first use, because MSAL calls it on a thread without a PowerShell runspace.
 - **Tests**
+  - Unit tests for device code connections with a mocked helper (`tests/2-unit/06-DeviceCodeConnection.Tests.ps1`), and for the device code helpers with simulated MSAL errors and tasks (`tests/2-unit/07-DeviceCodeHelper.Tests.ps1`). The UI-thread unit tests (`03-UiThreadDeadlock.Tests.ps1`) also cover `Wait-MsalEssentialsDeviceCodeTask`.
   - The UI-thread source test now also allows `Wait-MsalEssentialsDeviceCodeTask`, which clears the SynchronizationContext the same way as `Wait-MsalEssentialsTask`.
 
 ## [1.3.1] - 2026-11-10

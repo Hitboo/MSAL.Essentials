@@ -31,6 +31,8 @@
         - The sign-in helper itself can't be run without opening a browser,
           so a source check makes sure it waits through
           Wait-MsalEssentialsTask too.
+        - The device code wait (Wait-MsalEssentialsDeviceCodeTask) gets the
+          same checks as Wait-MsalEssentialsTask, with UiThreadWork.
 
     Why global: the mock bodies run in the module's scope and cannot see
     variables from this file's scope, but they can see global ones.
@@ -319,6 +321,56 @@ Describe 'MSAL.Essentials on a UI thread' {
 
             $result |
                 Should -Be 'from-caller'
+        }
+    }
+
+    Context 'Wait-MsalEssentialsDeviceCodeTask' {
+        It 'returns the result of the task and posts nothing to the UI context' {
+            $result = InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
+                Wait-MsalEssentialsDeviceCodeTask -PollMilliseconds 10 -ScriptBlock {
+                    param ($deviceCodeCallback)
+                    [MsalEssentialsTest.UiThreadWork]::GetValueAsync('token')
+                }
+            }
+
+            $result |
+                Should -Be 'token'
+            $script:UiContext.PostCount |
+                Should -Be 0
+        }
+
+        It 'restores the UI context afterwards' {
+            $null = InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
+                Wait-MsalEssentialsDeviceCodeTask -PollMilliseconds 10 -ScriptBlock {
+                    param ($deviceCodeCallback)
+                    [MsalEssentialsTest.UiThreadWork]::GetValueAsync('token')
+                }
+            }
+
+            [System.Threading.SynchronizationContext]::Current |
+                Should -Be $script:UiContext
+        }
+
+        It 'restores the UI context when the task fails, and posts nothing' {
+            $caughtError = $null
+            try {
+                InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
+                    Wait-MsalEssentialsDeviceCodeTask -PollMilliseconds 10 -ScriptBlock {
+                        param ($deviceCodeCallback)
+                        [MsalEssentialsTest.UiThreadWork]::FailAsync('sign-in failed')
+                    }
+                }
+            }
+            catch {
+                $caughtError = $_
+            }
+
+            $caughtError |
+                Should -Not -BeNullOrEmpty
+            [System.Threading.SynchronizationContext]::Current |
+                Should -Be $script:UiContext
+            $script:UiContext.PostCount |
+                Should -Be 0
         }
     }
 
