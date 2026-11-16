@@ -6,35 +6,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[Unreleased\]](#unreleased)
+- [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
+  - [TL;DR](#tldr)
   - [Added](#added)
 - [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
   - [Added](#added-1)
   - [Changed](#changed)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
-  - [TL;DR](#tldr)
+  - [TL;DR](#tldr-1)
   - [Added](#added-2)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed-1)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
-  - [TL;DR](#tldr-1)
+  - [TL;DR](#tldr-2)
   - [Added](#added-3)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
-  - [TL;DR](#tldr-2)
+  - [TL;DR](#tldr-3)
   - [Added](#added-4)
   - [Changed](#changed-2)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-3)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-3)
+  - [TL;DR](#tldr-4)
   - [Added](#added-5)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
-  - [TL;DR](#tldr-4)
+  - [TL;DR](#tldr-5)
   - [Added](#added-6)
 
-## [Unreleased]
+## [1.4.0] - 2026-11-16
+
+### TL;DR
+
+- Device code sign-in: `Connect-MsalEssentials -UseDeviceCode` signs in as a user by entering a code on any device. It is there for compatibility only and not recommended: device codes are used for phishing, and many tenants block the flow with Conditional Access.
+- The code is shown in the console and copied to the clipboard; `Get-MsalEssentialsToken` renews the connection silently, as after a browser sign-in.
+- The README shows which sign-in needs **Allow public client flows** (only the device code).
+- Tested against a real tenant in Windows PowerShell 5.1 and PowerShell 7, also on a WPF UI thread.
 
 ### Added
 
