@@ -159,7 +159,7 @@ There are two common variants:
 - [Configure a desktop app registration](https://learn.microsoft.com/entra/identity-platform/scenario-desktop-app-configuration). Redirect URIs: `http://localhost` for the system browser, or `https://login.microsoftonline.com/common/oauth2/nativeclient` for an embedded browser.
 - [Acquire tokens interactively (MSAL.NET)](https://learn.microsoft.com/entra/msal/dotnet/acquiring-tokens/desktop-mobile/acquiring-tokens-interactively)
 
-**In MSAL.Essentials:** already done, including the UI-thread deadlock fix.
+**In MSAL.Essentials:** already done, including the UI-thread deadlock fix. The device code flow is there too (`Connect-MsalEssentials -UseDeviceCode`), but only for compatibility: it is a common phishing method and Microsoft recommends blocking it wherever possible ([authentication flows in Conditional Access](https://learn.microsoft.com/entra/identity/conditional-access/concept-authentication-flows)). Use the browser sign-in when you can.
 
 ---
 

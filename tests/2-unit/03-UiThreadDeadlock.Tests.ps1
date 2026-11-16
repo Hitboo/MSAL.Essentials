@@ -31,6 +31,8 @@
         - The sign-in helper itself can't be run without opening a browser,
           so a source check makes sure it waits through
           Wait-MsalEssentialsTask too.
+        - The device code wait (Wait-MsalEssentialsDeviceCodeTask) gets the
+          same checks as Wait-MsalEssentialsTask, with UiThreadWork.
 
     Why global: the mock bodies run in the module's scope and cannot see
     variables from this file's scope, but they can see global ones.
@@ -322,6 +324,56 @@ Describe 'MSAL.Essentials on a UI thread' {
         }
     }
 
+    Context 'Wait-MsalEssentialsDeviceCodeTask' {
+        It 'returns the result of the task and posts nothing to the UI context' {
+            $result = InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
+                Wait-MsalEssentialsDeviceCodeTask -PollMilliseconds 10 -ScriptBlock {
+                    param ($deviceCodeCallback)
+                    [MsalEssentialsTest.UiThreadWork]::GetValueAsync('token')
+                }
+            }
+
+            $result |
+                Should -Be 'token'
+            $script:UiContext.PostCount |
+                Should -Be 0
+        }
+
+        It 'restores the UI context afterwards' {
+            $null = InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
+                Wait-MsalEssentialsDeviceCodeTask -PollMilliseconds 10 -ScriptBlock {
+                    param ($deviceCodeCallback)
+                    [MsalEssentialsTest.UiThreadWork]::GetValueAsync('token')
+                }
+            }
+
+            [System.Threading.SynchronizationContext]::Current |
+                Should -Be $script:UiContext
+        }
+
+        It 'restores the UI context when the task fails, and posts nothing' {
+            $caughtError = $null
+            try {
+                InModuleScope -ModuleName $script:ModuleName -ScriptBlock {
+                    Wait-MsalEssentialsDeviceCodeTask -PollMilliseconds 10 -ScriptBlock {
+                        param ($deviceCodeCallback)
+                        [MsalEssentialsTest.UiThreadWork]::FailAsync('sign-in failed')
+                    }
+                }
+            }
+            catch {
+                $caughtError = $_
+            }
+
+            $caughtError |
+                Should -Not -BeNullOrEmpty
+            [System.Threading.SynchronizationContext]::Current |
+                Should -Be $script:UiContext
+            $script:UiContext.PostCount |
+                Should -Be 0
+        }
+    }
+
     Context 'Real MSAL sign-in (no browser, no network)' {
         It 'test setup: a plain GetResult() posts the sign-in back to the UI thread (the deadlock cause)' {
             # Proves that MSAL really does this, so the test below means something.
@@ -435,13 +487,15 @@ Describe 'MSAL.Essentials on a UI thread' {
     }
 
     Context 'Source' {
-        It 'waits on MSAL tasks only through Wait-MsalEssentialsTask' {
+        It 'waits on MSAL tasks only through Wait-MsalEssentialsTask or Wait-MsalEssentialsDeviceCodeTask' {
             # A direct GetAwaiter() in any other function would block a UI
             # thread again. This also covers the interactive sign-in in
             # Get-MsalEssentialsDelegatedTokenSystemBrowser, which the tests
             # above can't run without opening a browser.
+            # Wait-MsalEssentialsDeviceCodeTask clears the context the same way;
+            # it is tested in 07-DeviceCodeHelper.Tests.ps1.
             $directWaits = Get-ChildItem -Path $script:SourcePath -Filter '*.ps1' -Recurse |
-                Where-Object -FilterScript { $_.BaseName -ne 'Wait-MsalEssentialsTask' } |
+                Where-Object -FilterScript { $_.BaseName -notin 'Wait-MsalEssentialsTask', 'Wait-MsalEssentialsDeviceCodeTask' } |
                 ForEach-Object -Process {
                     $fileName = $_.Name
                     $syntaxTree = [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$null)

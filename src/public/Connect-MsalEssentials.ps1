@@ -21,6 +21,18 @@
         terminating error for the command, so use -ErrorAction 'Stop' or
         try/catch in scripts to make sure nothing runs after a failed sign-in.
 
+        With -UseDeviceCode the user signs in on another device by entering a
+        code (device code flow), by calling
+        Get-MsalEssentialsDelegatedTokenDeviceCode. The message with the page
+        and the code is written to the host, and the code is copied to the
+        clipboard where one is available. This is NOT RECOMMENDED and only
+        included for compatibility, for sessions that can't open a browser
+        (SSH, a server core installation, a container): device codes are a
+        common phishing method, and many tenants block the device code flow
+        with Conditional Access. Use the browser sign-in wherever possible.
+        The token is delegated, like the browser sign-in, and
+        Get-MsalEssentialsToken renews it silently in the same way.
+
         With -Certificate or -ClientSecret the app signs in as itself
         (application permissions, client credentials flow) by calling
         Get-MsalEssentialsApplicationToken. No user, browser or redirect URI
@@ -42,6 +54,7 @@
 
         Currently supported:
             DelegatedSystemBrowser   interactive sign-in as a user (default)
+            DelegatedDeviceCode      sign-in as a user with a device code (not recommended)
             AppCertificate           application permissions with a certificate
             AppSecret                application permissions with a client secret
             ManagedIdentity          managed identity of the Azure resource
@@ -74,7 +87,12 @@
 
     .PARAMETER TimeoutSeconds
         How long to wait for the interactive sign-in to complete. If omitted,
-        the default of Get-MsalEssentialsDelegatedTokenSystemBrowser is used.
+        the default of the helper is used:
+            browser sign-in   120 seconds, allowed 1 to 3600
+            -UseDeviceCode    300 seconds, allowed 1 to 900 (15 minutes, the
+                              usual lifetime of a device code)
+        The range is checked by the helper, so a value outside it fails with
+        a ParameterArgumentValidationError when the sign-in starts.
 
     .PARAMETER RedirectUri
         The redirect URI MSAL listens on. Defaults to 'http://localhost'.
@@ -113,6 +131,23 @@
         asking for credentials. The hint is only shown as pre-filled when the
         browser has no signed-in session; otherwise Entra ID uses the session
         (or its account picker) and the hint does not appear.
+
+    .PARAMETER UseDeviceCode
+        Signs in as a user with the device code flow: open the page from the
+        message on any device, enter the code and sign in there. NOT
+        RECOMMENDED, see the description. Only use it where the browser
+        sign-in can't work.
+
+        The app registration needs "Allow public client flows" set to Yes
+        (Entra admin center > App registrations > your app > Authentication >
+        Advanced settings), but no redirect URI. Microsoft Graph Command Line
+        Tools (14d82eec-204b-4c2f-b7e8-296a70dab67e) allows it.
+
+        -DeviceCode is accepted as an alias, as in Connect-MgGraph.
+
+        Never enter a device code that you did not request yourself. If a
+        sign-in fails with MsalEssentials.ConditionalAccess (AADSTS53003),
+        the tenant probably blocks the device code flow.
 
     .PARAMETER Certificate
         A certificate with a private key (X509Certificate2) to sign in as the
@@ -173,6 +208,10 @@
         Listens on the fixed port 1234. 'http://localhost:1234' must be registered on the app.
 
     .EXAMPLE
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -UseDeviceCode -Scopes 'User.Read'
+        Not recommended. Shows a device code, and waits until the user has signed in with it on another device.
+
+    .EXAMPLE
         $certificate = Get-ChildItem -Path 'Cert:\CurrentUser\My' |
             Where-Object -FilterScript { $_.Thumbprint -eq $thumbprint }
         Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -Certificate $certificate
@@ -217,12 +256,14 @@ function Connect-MsalEssentials {
         # (system-assigned without, user-assigned with), so both are only
         # mandatory in the other sets.
         [Parameter(Mandatory, ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(Mandatory, ParameterSetName = 'DelegatedDeviceCode')]
         [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
         [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
         [string]
         $TenantId,
 
         [Parameter(Mandatory, ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(Mandatory, ParameterSetName = 'DelegatedDeviceCode')]
         [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
         [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
         [Parameter(ParameterSetName = 'ManagedIdentity')]
@@ -233,14 +274,16 @@ function Connect-MsalEssentials {
         # It is needed here because the scopes are stored for silent token renewal.
         # The app and managed identity sets are validated in their helpers.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(ParameterSetName = 'DelegatedDeviceCode')]
         [Parameter(ParameterSetName = 'AppCertificate')]
         [Parameter(ParameterSetName = 'AppSecret')]
         [Parameter(ParameterSetName = 'ManagedIdentity')]
         [string[]]
         $Scopes = @('https://graph.microsoft.com/.default'),
 
-        # No default and no validation here: these live in the helper function.
+        # No default and no validation here: these live in the helper functions.
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
+        [Parameter(ParameterSetName = 'DelegatedDeviceCode')]
         [int]
         $TimeoutSeconds,
 
@@ -251,6 +294,11 @@ function Connect-MsalEssentials {
         [Parameter(ParameterSetName = 'DelegatedSystemBrowser')]
         [string]
         $LoginHintUpn,
+
+        [Parameter(Mandatory, ParameterSetName = 'DelegatedDeviceCode')]
+        [Alias('DeviceCode')]
+        [switch]
+        $UseDeviceCode,
 
         [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
         [ValidateScript({
@@ -309,6 +357,34 @@ function Connect-MsalEssentials {
             # store an empty connection.
             try {
                 $authenticationResult = Get-MsalEssentialsDelegatedTokenSystemBrowser @tokenParameters
+            }
+            catch {
+                $PSCmdlet.ThrowTerminatingError($_)
+            }
+        }
+
+        'DelegatedDeviceCode' {
+            $requestedScopes = [string[]]@($Scopes)
+
+            $tokenParameters = @{
+                TenantId             = $TenantId
+                ClientId             = $ClientId
+                Scopes               = $requestedScopes
+                # Receives the MSAL client. Silent renewal needs the same client
+                # instance, like for the browser sign-in.
+                ApplicationReference = [ref]$clientApplication
+            }
+
+            if ($PSBoundParameters.ContainsKey('TimeoutSeconds')) {
+                $tokenParameters['TimeoutSeconds'] = $TimeoutSeconds
+            }
+
+            # Same type as the browser sign-in: a delegated token from a public
+            # client, so Get-MsalEssentialsToken renews it the same way.
+            $authenticationType = 'Delegated'
+
+            try {
+                $authenticationResult = Get-MsalEssentialsDelegatedTokenDeviceCode @tokenParameters
             }
             catch {
                 $PSCmdlet.ThrowTerminatingError($_)

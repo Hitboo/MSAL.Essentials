@@ -6,31 +6,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
+- [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
+  - [TL;DR](#tldr)
   - [Added](#added)
+- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
+  - [Added](#added-1)
   - [Changed](#changed)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
-  - [TL;DR](#tldr)
-  - [Added](#added-1)
+  - [TL;DR](#tldr-1)
+  - [Added](#added-2)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed-1)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
-  - [TL;DR](#tldr-1)
-  - [Added](#added-2)
-  - [Fixed](#fixed)
-- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-2)
   - [Added](#added-3)
+  - [Fixed](#fixed)
+- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
+  - [TL;DR](#tldr-3)
+  - [Added](#added-4)
   - [Changed](#changed-2)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-3)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-3)
-  - [Added](#added-4)
-  - [Fixed](#fixed-1)
-- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-4)
   - [Added](#added-5)
+  - [Fixed](#fixed-1)
+- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [TL;DR](#tldr-5)
+  - [Added](#added-6)
+
+## [1.4.0] - 2026-11-16
+
+### TL;DR
+
+- Device code sign-in: `Connect-MsalEssentials -UseDeviceCode` signs in as a user by entering a code on any device. It is there for compatibility only and not recommended: device codes are used for phishing, and many tenants block the flow with Conditional Access.
+- The code is shown in the console and copied to the clipboard; `Get-MsalEssentialsToken` renews the connection silently, as after a browser sign-in.
+- The README shows which sign-in needs **Allow public client flows** (only the device code).
+- Tested against a real tenant in Windows PowerShell 5.1 and PowerShell 7, also on a WPF UI thread.
+
+### Added
+
+- **Device code sign-in (not recommended, for compatibility only)**
+  - `Connect-MsalEssentials -UseDeviceCode` (alias `-DeviceCode`, as in `Connect-MgGraph`) signs in as a user with a device code: you open the page from the message on any device, enter the code and sign in there.
+    - Takes `-TenantId`, `-ClientId`, `-Scopes` and `-TimeoutSeconds` (default 300 seconds, at most 900, the usual lifetime of a device code). No redirect URI is needed, but the app registration needs **Allow public client flows**.
+    - The connection is `Delegated`, so `Get-MsalEssentialsToken` renews it silently (no new device code) and `Disconnect-MsalEssentials` clears it, as after a browser sign-in.
+    - Not recommended: device codes are a common phishing method, and Microsoft recommends blocking the device code flow wherever possible, so many tenants block it with Conditional Access. The help says so.
+  - New private helper `Get-MsalEssentialsDelegatedTokenDeviceCode`: gets a delegated token with the device code flow and maps MSAL errors to `MsalEssentials.*` errors with hints, for example `AADSTS7000218` (public client flows not allowed) to `MsalEssentials.AppConfiguration`, `AADSTS53003` (blocked by Conditional Access) to `MsalEssentials.ConditionalAccess`, a declined sign-in to `MsalEssentials.Cancelled` and an expired code to `MsalEssentials.Timeout`.
+  - New private helper `Wait-MsalEssentialsDeviceCodeTask`: shows the device code message with `Write-Host`, copies the code to the clipboard where one is available, and waits for the sign-in without deadlocking a UI thread. The MSAL callback is a small C# class, compiled on first use, because MSAL calls it on a thread without a PowerShell runspace.
+- **Tests**
+  - Unit tests for device code connections with a mocked helper (`tests/2-unit/06-DeviceCodeConnection.Tests.ps1`), and for the device code helpers with simulated MSAL errors and tasks (`tests/2-unit/07-DeviceCodeHelper.Tests.ps1`). The UI-thread unit tests (`03-UiThreadDeadlock.Tests.ps1`) also cover `Wait-MsalEssentialsDeviceCodeTask`.
+  - Interactive integration tests against a real tenant, skipped unless `MSAL_TEST_TENANT_ID` is set: `tests/3-integration/05-DeviceCodeSignIn.Tests.ps1` covers the timeout, a declined sign-in, an app without public client flows (`AADSTS7000218`, with `MSAL_TEST_CLIENT_ID_NO_LOCALHOST`), the sign-in, renewal and disconnect. The WPF Dispatcher test (`03-UiThreadDeadlock.Tests.ps1`) now runs its Connect > Disconnect > Connect sequence with `-UseDeviceCode` too, and shows the child's output while it runs.
+  - The UI-thread source test now also allows `Wait-MsalEssentialsDeviceCodeTask`, which clears the SynchronizationContext the same way as `Wait-MsalEssentialsTask`.
+- **Documentation**
+  - New example [Delegated sign-in with a device code](/docs/examples/Delegated-DeviceCode.md), with a warning about phishing and Conditional Access.
+  - README: a table under App registration that shows which sign-in needs **Allow public client flows** (only the device code; the browser sign-in doesn't, and application sign-in must not have it), device code setup (with the same warning), the example under How to use it, `-UseDeviceCode` under Commands and Troubleshooting.
+  - `docs/notes/Auth-Types.md`: device code flow listed under "In MSAL.Essentials" as compatibility only.
 
 ## [1.3.1] - 2026-11-10
 
