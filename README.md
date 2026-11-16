@@ -4,7 +4,7 @@
 
 Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview) wrapper.
 
-- Delegated permissions (sign in as a user through the system browser)
+- Delegated permissions (sign in as a user through the system browser, or with a device code for compatibility, not recommended)
 - Application permissions (sign in as the app itself with a certificate or a client secret)
 - Managed identity (sign in as the Azure resource the code runs on, system- or user-assigned)
 
@@ -79,7 +79,7 @@ This Module only supports minimal ways to get a MSAL token. For more complex tas
 
 Also good to know:
 
-- Only the interactive sign-in through the system browser is implemented. The embedded web view and the Windows broker (WAM) are not included.
+- The interactive sign-in uses the system browser. The embedded web view and the Windows broker (WAM) are not included. A device code sign-in exists for compatibility, but is not recommended (see [Device code](#device-code-not-recommended)).
 - The module compiles a small C# helper when it is imported, so it does not support PowerShell's Constrained Language Mode.
 - It is tested on Windows with Windows PowerShell 5.1 and PowerShell 7. Linux and macOS are not tested.
 - Tokens are only kept in memory for the current PowerShell session. Nothing is written to disk.
@@ -110,6 +110,17 @@ Get-ChildItem -Path '.\MSAL.Essentials' -Recurse | Unblock-File
 
 ### App registration
 
+The setting **Allow public client flows** (Entra admin center > **App registrations** > your app > **Authentication** > **Advanced settings**) depends on how you sign in:
+
+| Sign-in | Allow public client flows |
+| --- | --- |
+| Browser (`Connect-MsalEssentials` without a credential) | Not needed. Entra ID recognizes the public client by its **Mobile and desktop applications** redirect URI, so **No** works. |
+| Device code (`-UseDeviceCode`, not recommended) | **Yes** is required. Without it Entra ID answers with `AADSTS7000218`. |
+| Application (`-Certificate`, `-ClientSecret`) | Must be **No**. Otherwise Entra ID rejects the certificate or secret. |
+| Managed identity (`-ManagedIdentity`) | No app registration. |
+
+Turning it on only for device code also allows other public client flows for that app. If you need device codes, consider a separate app registration for them.
+
 #### Delegated permissions (sign in as a user)
 
 The sign-in opens your default browser and receives the answer on a local `http://localhost` address. The app registration needs that redirect URI:
@@ -122,6 +133,19 @@ The sign-in opens your default browser and receives the answer on a local `http:
 For testing you can use the **Microsoft Graph Command Line Tools** app (client ID `14d82eec-204b-4c2f-b7e8-296a70dab67e`). It works out of the box, but it belongs to Microsoft, you can't change it, and it is not recommended for production.
 
 To use another loopback address, for example a fixed port, pass `-RedirectUri 'http://localhost:1234'` to `Connect-MsalEssentials` and register the same URI. Only loopback addresses work with the system browser.
+
+#### Device code (not recommended)
+
+> [!WARNING]
+> Use the browser sign-in above wherever you can. Device codes are a common phishing method, and Microsoft recommends blocking the device code flow wherever possible, so many tenants block it with Conditional Access. `-UseDeviceCode` is only included for compatibility, for sessions that can't open a browser (SSH, a server core installation, a container). See [Delegated sign-in with a device code](docs/examples/Delegated-DeviceCode.md).
+
+`Connect-MsalEssentials -UseDeviceCode` shows a message with a page and a code, and copies the code to the clipboard where one is available. You open the page on any device, enter the code and sign in there. The token is delegated, like after a browser sign-in.
+
+1. Open the Microsoft Entra admin center, then **App registrations**, your app and **Authentication**.
+2. Under **Advanced settings**, set **Allow public client flows** to **Yes**. Without it, Entra ID answers with `AADSTS7000218`. No redirect URI is needed. Your apps for the browser sign-in don't need this setting, see the table above.
+3. Under **API permissions**, add the delegated permissions you need, as for the browser sign-in.
+
+The **Microsoft Graph Command Line Tools** app (client ID `14d82eec-204b-4c2f-b7e8-296a70dab67e`) allows the device code flow, so it works for a test. Only enter a code that you requested yourself.
 
 #### Application permissions (sign in as the app)
 
@@ -154,6 +178,7 @@ Every example is a complete script: connect, call Microsoft Graph, clean up.
 | Example | Sign in as | Use it for |
 | --- | --- | --- |
 | [Delegated sign-in through the browser](docs/examples/Delegated-SystemBrowser.md) | the current user | interactive scripts that act on behalf of a user |
+| [Delegated sign-in with a device code](docs/examples/Delegated-DeviceCode.md) (not recommended) | the current user, signing in on another device | compatibility only: sessions that can't open a browser, where your tenant allows the device code flow |
 | [Application sign-in with a certificate](docs/examples/Application-Certificate.md) | the app itself | unattended scripts and automation (recommended) |
 | [Application sign-in with a client secret](docs/examples/Application-ClientSecret.md) | the app itself | quick tests, or where a certificate is not possible |
 | [Managed identity sign-in](docs/examples/ManagedIdentity.md) | the Azure resource (system- or user-assigned identity) | scripts that run on an Azure VM, App Service, Azure Functions or an Azure Arc-enabled server |
@@ -164,7 +189,7 @@ Every example is a complete script: connect, call Microsoft Graph, clean up.
 
 | Command | What it does |
 | --- | --- |
-| `Connect-MsalEssentials` | Signs in as the current user through the default browser, as the app itself with `-Certificate` or `-ClientSecret`, or as the Azure resource with `-ManagedIdentity`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
+| `Connect-MsalEssentials` | Signs in as the current user through the default browser (or with `-UseDeviceCode`, not recommended), as the app itself with `-Certificate` or `-ClientSecret`, or as the Azure resource with `-ManagedIdentity`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
 | `Get-MsalEssentialsToken` | Returns the connection with a valid token and renews it when it expires soon. It never starts an interactive sign-in. |
 | `Disconnect-MsalEssentials` | Clears the connection and the MSAL token cache. |
 
@@ -172,16 +197,16 @@ Parameters and examples: `Get-Help Connect-MsalEssentials -Full`.
 
 ## Troubleshooting
 
-**The sign-in times out (`MsalEssentials.Timeout`).** Entra ID shows many errors on its own page in the browser and does not send them back to PowerShell. Examples are a redirect URI that is not registered (`AADSTS50011`) or a Conditional Access block. PowerShell only sees that the sign-in never finished. Look at the page in the browser to find the real error and its code. You can also wait longer with `-TimeoutSeconds` (default 120).
+**The sign-in times out (`MsalEssentials.Timeout`).** Entra ID shows many errors on its own page in the browser and does not send them back to PowerShell. Examples are a redirect URI that is not registered (`AADSTS50011`) or a Conditional Access block. PowerShell only sees that the sign-in never finished. Look at the page in the browser to find the real error and its code. You can also wait longer with `-TimeoutSeconds` (default 120). With `-UseDeviceCode` a timeout means that the code was not entered and confirmed in time, or that it expired (default 300 seconds, at most 900, which is the usual lifetime of a device code).
 
 Other errors come with a stable error ID in `$_.FullyQualifiedErrorId`. Details such as the error code and the correlation ID are in `$_.TargetObject`:
 
 | Error ID | Meaning |
 |---|---|
-| `MsalEssentials.AppConfiguration` | Redirect URI, app not found, invalid scope or tenant, or the app is set up as a public client (application permissions). |
+| `MsalEssentials.AppConfiguration` | Redirect URI, app not found, invalid scope or tenant, the app is set up as a public client (application permissions), or it does not allow public client flows (`-UseDeviceCode`). |
 | `MsalEssentials.Unauthorized` | Consent is missing, the user is not assigned, the account is not in the tenant, or the client secret or certificate was rejected. |
-| `MsalEssentials.ConditionalAccess` | A policy asks for MFA, a compliant device or another condition. |
-| `MsalEssentials.Cancelled` | The sign-in was cancelled. |
+| `MsalEssentials.ConditionalAccess` | A policy asks for MFA, a compliant device or another condition. With `-UseDeviceCode` it usually means that the tenant blocks the device code flow: sign in through the browser instead. |
+| `MsalEssentials.Cancelled` | The sign-in was cancelled, or declined on the device where the device code was entered. |
 | `MsalEssentials.ManagedIdentityUnavailable` | No managed identity was found. The code doesn't run on an Azure resource, or its managed identity is turned off. |
 | `MsalEssentials.NotConnected` | There is no connection yet. Run `Connect-MsalEssentials`. |
 | `MsalEssentials.ReconnectRequired` | The token expired and can't be renewed silently. Run `Connect-MsalEssentials` again. |

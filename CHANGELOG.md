@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unit tests for device code connections with a mocked helper (`tests/2-unit/06-DeviceCodeConnection.Tests.ps1`), and for the device code helpers with simulated MSAL errors and tasks (`tests/2-unit/07-DeviceCodeHelper.Tests.ps1`). The UI-thread unit tests (`03-UiThreadDeadlock.Tests.ps1`) also cover `Wait-MsalEssentialsDeviceCodeTask`.
   - Interactive integration tests against a real tenant, skipped unless `MSAL_TEST_TENANT_ID` is set: `tests/3-integration/05-DeviceCodeSignIn.Tests.ps1` covers the timeout, a declined sign-in, an app without public client flows (`AADSTS7000218`, with `MSAL_TEST_CLIENT_ID_NO_LOCALHOST`), the sign-in, renewal and disconnect. The WPF Dispatcher test (`03-UiThreadDeadlock.Tests.ps1`) now runs its Connect > Disconnect > Connect sequence with `-UseDeviceCode` too, and shows the child's output while it runs.
   - The UI-thread source test now also allows `Wait-MsalEssentialsDeviceCodeTask`, which clears the SynchronizationContext the same way as `Wait-MsalEssentialsTask`.
+- **Documentation**
+  - New example [Delegated sign-in with a device code](/docs/examples/Delegated-DeviceCode.md), with a warning about phishing and Conditional Access.
+  - README: a table under App registration that shows which sign-in needs **Allow public client flows** (only the device code; the browser sign-in doesn't, and application sign-in must not have it), device code setup (with the same warning), the example under How to use it, `-UseDeviceCode` under Commands and Troubleshooting.
+  - `docs/notes/Auth-Types.md`: device code flow listed under "In MSAL.Essentials" as compatibility only.
 
 ## [1.3.1] - 2026-11-10
 
