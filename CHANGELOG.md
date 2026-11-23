@@ -6,39 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[Unreleased\]](#unreleased)
+- [\[1.5.0\] - 2026-11-23](#150---2026-11-23)
+  - [TL;DR](#tldr)
   - [Added](#added)
   - [Changed](#changed)
 - [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
-  - [TL;DR](#tldr)
+  - [TL;DR](#tldr-1)
   - [Added](#added-1)
 - [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
   - [Added](#added-2)
   - [Changed](#changed-1)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
-  - [TL;DR](#tldr-1)
+  - [TL;DR](#tldr-2)
   - [Added](#added-3)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed-2)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
-  - [TL;DR](#tldr-2)
+  - [TL;DR](#tldr-3)
   - [Added](#added-4)
   - [Fixed](#fixed)
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
-  - [TL;DR](#tldr-3)
+  - [TL;DR](#tldr-4)
   - [Added](#added-5)
   - [Changed](#changed-3)
 - [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-4)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
-  - [TL;DR](#tldr-4)
+  - [TL;DR](#tldr-5)
   - [Added](#added-6)
   - [Fixed](#fixed-1)
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
-  - [TL;DR](#tldr-5)
+  - [TL;DR](#tldr-6)
   - [Added](#added-7)
 
-## [Unreleased]
+## [1.5.0] - 2026-11-23
+
+### TL;DR
+
+- Workload identity federation: `Connect-MsalEssentials -FederatedToken` (alias `-ClientAssertion`) or `-FederatedTokenFile` signs in as the app with a token that another platform issued to the running job (GitHub Actions, Azure DevOps, Kubernetes, another cloud). No certificate or secret is stored.
+- The connection is an `Application` connection, so `Get-MsalEssentialsToken` renews it and `Disconnect-MsalEssentials` clears it. A token file is read again for every new token; a token string is reused, so renewal fails once it has expired.
+- New example page for GitHub Actions and Kubernetes, and hints for the usual federation errors (`AADSTS70021`, `700211`-`700213`, `700024`, `50027`).
+- Tested against a real tenant in Windows PowerShell 5.1 and PowerShell 7, with an Azure VM's managed identity as the token issuer.
+- Internal: the parameter set `switch` statements throw on an unknown set. No change in behavior.
 
 ### Added
 
