@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The private helper `Get-MsalEssentialsApplicationToken` takes `-FederatedToken` and `-FederatedTokenFile` and passes them to MSAL as the client assertion. The token file is read by a small C# class, compiled on first use, because MSAL may ask for the assertion on a thread without a PowerShell runspace. New hints for `AADSTS70021` (no matching federated credential, or not active yet), `AADSTS700211`/`700212`/`700213` (issuer, audience or subject don't match), `AADSTS700024` (expired federated token) and `AADSTS50027` (not a valid JWT). A missing, unreadable or empty token file fails with `MsalEssentials.AppConfiguration`.
 - **Tests**
   - Unit tests for federated connections with a mocked helper (`tests/2-unit/08-FederatedTokenConnection.Tests.ps1`), and for the helper with simulated MSAL errors and a real token file (`tests/2-unit/09-FederatedTokenHelper.Tests.ps1`).
+  - Integration tests against a real tenant (`tests/3-integration/06-FederatedTokenSignIn.Tests.ps1`), skipped unless `MSAL_TEST_WIF_TENANT_ID`, `MSAL_TEST_WIF_CLIENT_ID` and `MSAL_TEST_MI_USER_ASSIGNED_CLIENT_ID` are set. They run on an Azure VM, whose user-assigned managed identity issues the federated token for an app registration that trusts it, and cover `-FederatedToken`, `-FederatedTokenFile` with a real renewal, a token with the wrong audience, a missing token file and disconnect.
 
 ## [1.4.0] - 2026-11-16
 
