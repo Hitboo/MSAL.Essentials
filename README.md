@@ -5,7 +5,7 @@
 Lightweight PowerShell [Microsoft Authentication Library (MSAL)](https://learn.microsoft.com/en-us/entra/identity-platform/msal-overview) wrapper.
 
 - Delegated permissions (sign in as a user through the system browser, or with a device code for compatibility, not recommended)
-- Application permissions (sign in as the app itself with a certificate or a client secret)
+- Application permissions (sign in as the app itself with a certificate, a client secret or workload identity federation)
 - Managed identity (sign in as the Azure resource the code runs on, system- or user-assigned)
 
 > [!NOTE]
@@ -116,7 +116,7 @@ The setting **Allow public client flows** (Entra admin center > **App registrati
 | --- | --- |
 | Browser (`Connect-MsalEssentials` without a credential) | Not needed. Entra ID recognizes the public client by its **Mobile and desktop applications** redirect URI, so **No** works. |
 | Device code (`-UseDeviceCode`, not recommended) | **Yes** is required. Without it Entra ID answers with `AADSTS7000218`. |
-| Application (`-Certificate`, `-ClientSecret`) | Must be **No**. Otherwise Entra ID rejects the certificate or secret. |
+| Application (`-Certificate`, `-ClientSecret`, `-FederatedToken`, `-FederatedTokenFile`) | Must be **No**. Otherwise Entra ID rejects the certificate, secret or federated token. |
 | Managed identity (`-ManagedIdentity`) | No app registration. |
 
 Turning it on only for device code also allows other public client flows for that app. If you need device codes, consider a separate app registration for them.
@@ -160,6 +160,16 @@ The app signs in as itself with a certificate or a client secret. No browser and
 
 A certificate is the safer choice for production, because a secret is a shared password that can leak. Application permissions always use one scope that ends with `/.default`, for example `https://graph.microsoft.com/.default` (the default).
 
+#### Workload identity federation (sign in as the app, without a secret)
+
+Where the job runs on a platform that issues its own tokens (GitHub Actions, Azure DevOps, Kubernetes, another cloud), the app can sign in with that token instead of a certificate or secret. Nothing secret is stored.
+
+1. Set up application permissions as above (steps 3 and 4), but skip the certificate or secret.
+2. Under **Certificates & secrets** > **Federated credentials**, add a credential for the platform. Issuer, subject and audience (usually `api://AzureADTokenExchange`) must match the platform's token exactly.
+3. Pass the token with `-FederatedToken`, or the path of a token file with `-FederatedTokenFile`.
+
+A token passed with `-FederatedToken` is also used for renewal, so the connection can't be renewed once that token has expired; connect again with a new one. A token file is read again for every new token. See [Application sign-in with workload identity federation](docs/examples/Application-WorkloadIdentityFederation.md).
+
 #### Managed identity (sign in as the Azure resource)
 
 A managed identity needs no app registration, no credential and no redirect URI. Azure manages it for the resource the code runs on.
@@ -181,6 +191,7 @@ Every example is a complete script: connect, call Microsoft Graph, clean up.
 | [Delegated sign-in with a device code](docs/examples/Delegated-DeviceCode.md) (not recommended) | the current user, signing in on another device | compatibility only: sessions that can't open a browser, where your tenant allows the device code flow |
 | [Application sign-in with a certificate](docs/examples/Application-Certificate.md) | the app itself | unattended scripts and automation (recommended) |
 | [Application sign-in with a client secret](docs/examples/Application-ClientSecret.md) | the app itself | quick tests, or where a certificate is not possible |
+| [Application sign-in with workload identity federation](docs/examples/Application-WorkloadIdentityFederation.md) | the app itself, with a token from GitHub Actions, Kubernetes or another platform | pipelines and workloads outside Azure, without a stored secret |
 | [Managed identity sign-in](docs/examples/ManagedIdentity.md) | the Azure resource (system- or user-assigned identity) | scripts that run on an Azure VM, App Service, Azure Functions or an Azure Arc-enabled server |
 | [Create a certificate for testing](docs/examples/Create-TestCertificate.md) | (setup) | a self-signed certificate for the certificate example |
 | [Grant Microsoft Graph permissions to a managed identity](docs/examples/Grant-ManagedIdentityGraphPermission.md) | (setup) | the application permission `User.Read.All` for the managed identity example |
@@ -189,7 +200,7 @@ Every example is a complete script: connect, call Microsoft Graph, clean up.
 
 | Command | What it does |
 | --- | --- |
-| `Connect-MsalEssentials` | Signs in as the current user through the default browser (or with `-UseDeviceCode`, not recommended), as the app itself with `-Certificate` or `-ClientSecret`, or as the Azure resource with `-ManagedIdentity`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
+| `Connect-MsalEssentials` | Signs in as the current user through the default browser (or with `-UseDeviceCode`, not recommended), as the app itself with `-Certificate`, `-ClientSecret`, `-FederatedToken` or `-FederatedTokenFile`, or as the Azure resource with `-ManagedIdentity`, and keeps the connection in memory. `-PassThru` returns it, including the access token. |
 | `Get-MsalEssentialsToken` | Returns the connection with a valid token and renews it when it expires soon. It never starts an interactive sign-in. |
 | `Disconnect-MsalEssentials` | Clears the connection and the MSAL token cache. |
 

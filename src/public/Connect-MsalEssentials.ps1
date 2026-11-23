@@ -41,6 +41,18 @@
         issue a refresh token for this flow: Get-MsalEssentialsToken renews
         the token by requesting a new one with the same certificate or secret.
 
+        With -FederatedToken or -FederatedTokenFile the app signs in as
+        itself with workload identity federation: instead of a secret or
+        certificate, it proves who it is with a token that another identity
+        provider issued to the running job (GitHub Actions, Azure DevOps,
+        Kubernetes, another cloud, ...). A federated identity credential on
+        the app registration must trust exactly that token's issuer, subject
+        and audience. Nothing secret is stored. This calls
+        Get-MsalEssentialsApplicationToken as well, and the connection is an
+        'Application' connection. Get-MsalEssentialsToken renews it with the
+        same token (which fails once it has expired) or by reading the token
+        file again (which keeps working when the platform rotates the file).
+
         With -ManagedIdentity the code signs in as the managed identity of
         the Azure resource it runs on (Azure VM, App Service, Azure Functions,
         Azure Arc-enabled server, ...) by calling
@@ -57,6 +69,8 @@
             DelegatedDeviceCode      sign-in as a user with a device code (not recommended)
             AppCertificate           application permissions with a certificate
             AppSecret                application permissions with a client secret
+            AppFederatedToken        application permissions with a federated token
+            AppFederatedTokenFile    application permissions with a federated token file
             ManagedIdentity          managed identity of the Azure resource
 
         Planned parameter sets (not implemented yet):
@@ -79,7 +93,8 @@
         The scopes to request. Defaults to Microsoft Graph's default scope set.
         The same scopes are used when the token is renewed.
 
-        With -Certificate, -ClientSecret or -ManagedIdentity this must be
+        With -Certificate, -ClientSecret, -FederatedToken,
+        -FederatedTokenFile or -ManagedIdentity this must be
         exactly one scope that ends with '/.default', for example
         'https://graph.microsoft.com/.default'. Application permissions are
         granted on the app registration (or to the managed identity), not
@@ -169,6 +184,32 @@
         store (Get-Secret). ConvertTo-SecureString -AsPlainText puts the plain
         text into your script.
 
+    .PARAMETER FederatedToken
+        A token (JWT) that the platform issued to the running job, to sign in
+        as the application with workload identity federation. For example
+        the OIDC token of a GitHub Actions job (requested with audience
+        'api://AzureADTokenExchange'). Add a federated credential for its
+        issuer and subject on the app registration (Entra admin center > App
+        registrations > your app > Certificates & secrets > Federated
+        credentials). The app needs application permissions with admin
+        consent.
+
+        The token is used as it is, also for renewal. Platform tokens are
+        often valid for minutes only, so once it has expired,
+        Get-MsalEssentialsToken can't renew the connection: connect again
+        with a new token. MSAL calls this a client assertion, so
+        -ClientAssertion is accepted as an alias.
+
+        The token is a credential while it is valid. Don't log it.
+
+    .PARAMETER FederatedTokenFile
+        The path of a file that holds the federated token, to sign in as the
+        application with workload identity federation. On Kubernetes (Azure
+        Workload Identity) the path is in $env:AZURE_FEDERATED_TOKEN_FILE.
+        The file is read again whenever a new token is requested, so renewal
+        keeps working when the platform replaces the file. A relative path
+        is resolved against the current location when you connect.
+
     .PARAMETER ManagedIdentity
         Signs in as the managed identity of the Azure resource this code runs
         on. Add -ClientId for a user-assigned identity. The identity needs
@@ -223,6 +264,14 @@
         Signs in as the application with a client secret and requests an Azure Key Vault token.
 
     .EXAMPLE
+        Connect-MsalEssentials -TenantId $tenantId -ClientId $clientId -FederatedToken $oidcToken
+        Signs in as the application with a token from another identity provider (workload identity federation).
+
+    .EXAMPLE
+        Connect-MsalEssentials -TenantId $env:AZURE_TENANT_ID -ClientId $env:AZURE_CLIENT_ID -FederatedTokenFile $env:AZURE_FEDERATED_TOKEN_FILE
+        In a Kubernetes pod with Azure Workload Identity: signs in as the application with the projected token file.
+
+    .EXAMPLE
         Connect-MsalEssentials -ManagedIdentity
         On an Azure resource: signs in with its system-assigned managed identity and gets a Microsoft Graph token.
 
@@ -259,6 +308,8 @@ function Connect-MsalEssentials {
         [Parameter(Mandatory, ParameterSetName = 'DelegatedDeviceCode')]
         [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
         [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory, ParameterSetName = 'AppFederatedToken')]
+        [Parameter(Mandatory, ParameterSetName = 'AppFederatedTokenFile')]
         [string]
         $TenantId,
 
@@ -266,6 +317,8 @@ function Connect-MsalEssentials {
         [Parameter(Mandatory, ParameterSetName = 'DelegatedDeviceCode')]
         [Parameter(Mandatory, ParameterSetName = 'AppCertificate')]
         [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory, ParameterSetName = 'AppFederatedToken')]
+        [Parameter(Mandatory, ParameterSetName = 'AppFederatedTokenFile')]
         [Parameter(ParameterSetName = 'ManagedIdentity')]
         [string]
         $ClientId,
@@ -277,6 +330,8 @@ function Connect-MsalEssentials {
         [Parameter(ParameterSetName = 'DelegatedDeviceCode')]
         [Parameter(ParameterSetName = 'AppCertificate')]
         [Parameter(ParameterSetName = 'AppSecret')]
+        [Parameter(ParameterSetName = 'AppFederatedToken')]
+        [Parameter(ParameterSetName = 'AppFederatedTokenFile')]
         [Parameter(ParameterSetName = 'ManagedIdentity')]
         [string[]]
         $Scopes = @('https://graph.microsoft.com/.default'),
@@ -313,6 +368,17 @@ function Connect-MsalEssentials {
         [Parameter(Mandatory, ParameterSetName = 'AppSecret')]
         [System.Security.SecureString]
         $ClientSecret,
+
+        # Checked in the helper (not empty, file exists), like the other
+        # app credentials.
+        [Parameter(Mandatory, ParameterSetName = 'AppFederatedToken')]
+        [Alias('ClientAssertion')]
+        [string]
+        $FederatedToken,
+
+        [Parameter(Mandatory, ParameterSetName = 'AppFederatedTokenFile')]
+        [string]
+        $FederatedTokenFile,
 
         [Parameter(Mandatory, ParameterSetName = 'ManagedIdentity')]
         [Alias('Identity')]
@@ -391,7 +457,7 @@ function Connect-MsalEssentials {
             }
         }
 
-        { $_ -in 'AppCertificate', 'AppSecret' } {
+        { $_ -in 'AppCertificate', 'AppSecret', 'AppFederatedToken', 'AppFederatedTokenFile' } {
             $requestedScopes = [string[]]@($Scopes)
 
             $tokenParameters = @{
@@ -399,15 +465,16 @@ function Connect-MsalEssentials {
                 ClientId             = $ClientId
                 Scopes               = $requestedScopes
                 # Receives the MSAL client. Renewal asks it for a new token, and
-                # it keeps the certificate or secret.
+                # it keeps the certificate, secret or federated token (file).
                 ApplicationReference = [ref]$clientApplication
             }
 
-            if ($PSCmdlet.ParameterSetName -eq 'AppCertificate') {
-                $tokenParameters['Certificate'] = $Certificate
-            }
-            else {
-                $tokenParameters['ClientSecret'] = $ClientSecret
+            switch ($PSCmdlet.ParameterSetName) {
+                'AppCertificate'        { $tokenParameters['Certificate']        = $Certificate }
+                'AppSecret'             { $tokenParameters['ClientSecret']       = $ClientSecret }
+                'AppFederatedToken'     { $tokenParameters['FederatedToken']     = $FederatedToken }
+                'AppFederatedTokenFile' { $tokenParameters['FederatedTokenFile'] = $FederatedTokenFile }
+                default                 { throw ('Unknown parameter set: {0}' -f $PSCmdlet.ParameterSetName) }
             }
 
             $authenticationType = 'Application'
@@ -447,6 +514,10 @@ function Connect-MsalEssentials {
         # Future parameter sets go here, each setting $authenticationResult,
         # $authenticationType and $requestedScopes the same way:
         #   'AccessToken'     -> use an access token that was obtained elsewhere
+
+        default {
+            throw ('Unknown parameter set: {0}' -f $PSCmdlet.ParameterSetName)
+        }
     }
 
     if (-not $authenticationResult -or [string]::IsNullOrEmpty($authenticationResult.AccessToken)) {

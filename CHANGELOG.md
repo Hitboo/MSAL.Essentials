@@ -6,34 +6,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
-- [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
+- [\[1.5.0\] - 2026-11-23](#150---2026-11-23)
   - [TL;DR](#tldr)
   - [Added](#added)
-- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
-  - [Added](#added-1)
   - [Changed](#changed)
-- [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
+- [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
   - [TL;DR](#tldr-1)
+  - [Added](#added-1)
+- [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
   - [Added](#added-2)
-- [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
   - [Changed](#changed-1)
-- [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
+- [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
   - [TL;DR](#tldr-2)
   - [Added](#added-3)
-  - [Fixed](#fixed)
-- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
+- [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
+  - [Changed](#changed-2)
+- [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr-3)
   - [Added](#added-4)
-  - [Changed](#changed-2)
-- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
-  - [Changed](#changed-3)
-- [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
+  - [Fixed](#fixed)
+- [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-4)
   - [Added](#added-5)
-  - [Fixed](#fixed-1)
-- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [Changed](#changed-3)
+- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
+  - [Changed](#changed-4)
+- [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-5)
   - [Added](#added-6)
+  - [Fixed](#fixed-1)
+- [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
+  - [TL;DR](#tldr-6)
+  - [Added](#added-7)
+
+## [1.5.0] - 2026-11-23
+
+### TL;DR
+
+- Workload identity federation: `Connect-MsalEssentials -FederatedToken` (alias `-ClientAssertion`) or `-FederatedTokenFile` signs in as the app with a token that another platform issued to the running job (GitHub Actions, Azure DevOps, Kubernetes, another cloud). No certificate or secret is stored.
+- The connection is an `Application` connection, so `Get-MsalEssentialsToken` renews it and `Disconnect-MsalEssentials` clears it. A token file is read again for every new token; a token string is reused, so renewal fails once it has expired.
+- New example page for GitHub Actions and Kubernetes, and hints for the usual federation errors (`AADSTS70021`, `700211`-`700213`, `700024`, `50027`).
+- Tested against a real tenant in Windows PowerShell 5.1 and PowerShell 7, with an Azure VM's managed identity as the token issuer.
+- Internal: the parameter set `switch` statements throw on an unknown set. No change in behavior.
+
+### Added
+
+- **Workload identity federation (application sign-in without a secret)**
+  - `Connect-MsalEssentials -FederatedToken` (alias `-ClientAssertion`) signs in as the app itself with a token that another platform issued to the running job (GitHub Actions, Azure DevOps, Kubernetes, another cloud). A federated credential on the app registration must trust the token's issuer, subject and audience. No certificate or secret is stored.
+  - `Connect-MsalEssentials -FederatedTokenFile` takes the path of a token file instead, such as `AZURE_FEDERATED_TOKEN_FILE` on Kubernetes. The file is read again for every new token, so the connection keeps renewing when the platform replaces the file.
+  - Both take `-TenantId`, `-ClientId` and `-Scopes` (one `/.default` scope) and create an `Application` connection, so `Get-MsalEssentialsToken` renews it and `Disconnect-MsalEssentials` clears it as after a certificate or secret sign-in. A token passed with `-FederatedToken` is reused for renewal, so renewal fails once that token has expired: connect again with a new one.
+  - The private helper `Get-MsalEssentialsApplicationToken` takes `-FederatedToken` and `-FederatedTokenFile` and passes them to MSAL as the client assertion. The token file is read by a small C# class, compiled on first use, because MSAL may ask for the assertion on a thread without a PowerShell runspace. New hints for `AADSTS70021` (no matching federated credential, or not active yet), `AADSTS700211`/`700212`/`700213` (issuer, audience or subject don't match), `AADSTS700024` (expired federated token) and `AADSTS50027` (not a valid JWT). A missing, unreadable or empty token file fails with `MsalEssentials.AppConfiguration`.
+- **Tests**
+  - Unit tests for federated connections with a mocked helper (`tests/2-unit/08-FederatedTokenConnection.Tests.ps1`), and for the helper with simulated MSAL errors and a real token file (`tests/2-unit/09-FederatedTokenHelper.Tests.ps1`).
+  - Integration tests against a real tenant (`tests/3-integration/06-FederatedTokenSignIn.Tests.ps1`), skipped unless `MSAL_TEST_WIF_TENANT_ID`, `MSAL_TEST_WIF_CLIENT_ID` and `MSAL_TEST_MI_USER_ASSIGNED_CLIENT_ID` are set. They run on an Azure VM, whose user-assigned managed identity issues the federated token for an app registration that trusts it, and cover `-FederatedToken`, `-FederatedTokenFile` with a real renewal, a token with the wrong audience, a missing token file and disconnect.
+- **Documentation**
+  - New example [Application sign-in with workload identity federation](docs/examples/Application-WorkloadIdentityFederation.md): the federated credential for GitHub Actions and Kubernetes, a GitHub Actions workflow that gets the job's OIDC token and lists users from Microsoft Graph, the token file variant and the common errors.
+  - The README explains the setup under **App registration**, and `docs/notes/Auth-Types.md` marks workload identity federation as done.
+
+### Changed
+
+- `Get-MsalEssentialsApplicationToken` picks the credential (certificate, secret, federated token or token file) with a `switch` on the parameter set instead of an `if`/`elseif` chain, and throws on an unknown parameter set instead of falling through to the secret. No change in behavior.
+- `Connect-MsalEssentials` throws on an unknown parameter set in both of its `switch` statements, so a new parameter set without its own branch fails at once with a clear message instead of later with "no access token was returned" or a missing credential. No change in behavior for the existing parameter sets.
 
 ## [1.4.0] - 2026-11-16
 
