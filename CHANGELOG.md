@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Workload identity federation (application sign-in without a secret)**
+  - `Connect-MsalEssentials -FederatedToken` (alias `-ClientAssertion`) signs in as the app itself with a token that another platform issued to the running job (GitHub Actions, Azure DevOps, Kubernetes, another cloud). A federated credential on the app registration must trust the token's issuer, subject and audience. No certificate or secret is stored.
+  - `Connect-MsalEssentials -FederatedTokenFile` takes the path of a token file instead, such as `AZURE_FEDERATED_TOKEN_FILE` on Kubernetes. The file is read again for every new token, so the connection keeps renewing when the platform replaces the file.
+  - Both take `-TenantId`, `-ClientId` and `-Scopes` (one `/.default` scope) and create an `Application` connection, so `Get-MsalEssentialsToken` renews it and `Disconnect-MsalEssentials` clears it as after a certificate or secret sign-in. A token passed with `-FederatedToken` is reused for renewal, so renewal fails once that token has expired: connect again with a new one.
   - The private helper `Get-MsalEssentialsApplicationToken` takes `-FederatedToken` and `-FederatedTokenFile` and passes them to MSAL as the client assertion. The token file is read by a small C# class, compiled on first use, because MSAL may ask for the assertion on a thread without a PowerShell runspace. New hints for `AADSTS70021` (no matching federated credential, or not active yet), `AADSTS700211`/`700212`/`700213` (issuer, audience or subject don't match), `AADSTS700024` (expired federated token) and `AADSTS50027` (not a valid JWT). A missing, unreadable or empty token file fails with `MsalEssentials.AppConfiguration`.
 
 ## [1.4.0] - 2026-11-16
