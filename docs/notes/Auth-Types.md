@@ -141,6 +141,8 @@ Under the hood it's a special kind of service principal that you can't modify di
 3. [GitHub Actions walkthrough](https://learn.microsoft.com/azure/developer/github/connect-from-azure-openid-connect)
 4. [Limits and gotchas](https://learn.microsoft.com/entra/workload-id/workload-identity-federation-considerations)
 
+**In MSAL.Essentials:** done. `Connect-MsalEssentials -FederatedToken` takes the platform's token, `-FederatedTokenFile` the path of a token file (read again for every new token, so Kubernetes token rotation keeps renewal working). See [Application sign-in with workload identity federation](../examples/Application-WorkloadIdentityFederation.md).
+
 ---
 
 ## 4. Interactive auth 🙂
@@ -187,7 +189,7 @@ There are two common variants:
 |---|---|---|---|---|
 | Service principal (cert/secret) | App | **Yes** | Nothing better fits, or local dev | ✅ Done |
 | Managed identity | Azure resource or Arc server | No | Code runs in Azure or on an Arc server | ✅ Done |
-| Workload identity federation | App, trusted via an external issuer | No | GitHub Actions, Azure DevOps, Kubernetes, other clouds | Not yet |
+| Workload identity federation | App, trusted via an external issuer | No | GitHub Actions, Azure DevOps, Kubernetes, other clouds | ✅ Done |
 | Interactive | User | No | A human runs the tool | ✅ Done |
 | WAM broker | User (Windows account) | No | Windows desktop, SSO with the Windows account | Not yet |
 

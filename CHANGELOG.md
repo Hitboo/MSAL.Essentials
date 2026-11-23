@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests**
   - Unit tests for federated connections with a mocked helper (`tests/2-unit/08-FederatedTokenConnection.Tests.ps1`), and for the helper with simulated MSAL errors and a real token file (`tests/2-unit/09-FederatedTokenHelper.Tests.ps1`).
   - Integration tests against a real tenant (`tests/3-integration/06-FederatedTokenSignIn.Tests.ps1`), skipped unless `MSAL_TEST_WIF_TENANT_ID`, `MSAL_TEST_WIF_CLIENT_ID` and `MSAL_TEST_MI_USER_ASSIGNED_CLIENT_ID` are set. They run on an Azure VM, whose user-assigned managed identity issues the federated token for an app registration that trusts it, and cover `-FederatedToken`, `-FederatedTokenFile` with a real renewal, a token with the wrong audience, a missing token file and disconnect.
+- **Documentation**
+  - New example [Application sign-in with workload identity federation](docs/examples/Application-WorkloadIdentityFederation.md): the federated credential for GitHub Actions and Kubernetes, a GitHub Actions workflow that gets the job's OIDC token and lists users from Microsoft Graph, the token file variant and the common errors.
+  - The README explains the setup under **App registration**, and `docs/notes/Auth-Types.md` marks workload identity federation as done.
 
 ## [1.4.0] - 2026-11-16
 
