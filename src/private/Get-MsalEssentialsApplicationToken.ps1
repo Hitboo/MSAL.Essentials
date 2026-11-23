@@ -163,28 +163,31 @@ function Get-MsalEssentialsApplicationToken {
             ('https://login.microsoftonline.com/{0}' -f $TenantId)
         )
 
-        if ($PSCmdlet.ParameterSetName -eq 'Certificate') {
-            $clientBuilder = $clientBuilder.WithCertificate($Certificate)
-        }
-        elseif ($PSCmdlet.ParameterSetName -eq 'FederatedToken') {
-            # MSAL sends this string as the client assertion on every request.
-            $clientBuilder = $clientBuilder.WithClientAssertion($FederatedToken)
-        }
-        elseif ($PSCmdlet.ParameterSetName -eq 'FederatedTokenFile') {
-            if (-not (Test-Path -LiteralPath $federatedTokenPath -PathType 'Leaf')) {
-                throw [System.IO.FileNotFoundException]::new(
-                    ('The federated token file was not found: {0}' -f $federatedTokenPath),
-                    $federatedTokenPath
-                )
+        switch ($PSCmdlet.ParameterSetName) {
+            'Certificate' {
+                $clientBuilder = $clientBuilder.WithCertificate($Certificate)
             }
 
-            if (-not ('MsalEssentials.FederatedTokenFileReader' -as [type])) {
-                # MSAL calls the assertion delegate whenever it requests a
-                # token, possibly on a thread pool thread. A PowerShell script
-                # block can't run there (no runspace), so the delegate is a
-                # small compiled C# method. Windows PowerShell 5.1 compiles
-                # with C# 5 - keep this source C# 5 compatible.
-                Add-Type -Language 'CSharp' -TypeDefinition @'
+            'FederatedToken' {
+                # MSAL sends this string as the client assertion on every request.
+                $clientBuilder = $clientBuilder.WithClientAssertion($FederatedToken)
+            }
+
+            'FederatedTokenFile' {
+                if (-not (Test-Path -LiteralPath $federatedTokenPath -PathType 'Leaf')) {
+                    throw [System.IO.FileNotFoundException]::new(
+                        ('The federated token file was not found: {0}' -f $federatedTokenPath),
+                        $federatedTokenPath
+                    )
+                }
+
+                if (-not ('MsalEssentials.FederatedTokenFileReader' -as [type])) {
+                    # MSAL calls the assertion delegate whenever it requests a
+                    # token, possibly on a thread pool thread. A PowerShell script
+                    # block can't run there (no runspace), so the delegate is a
+                    # small compiled C# method. Windows PowerShell 5.1 compiles
+                    # with C# 5 - keep this source C# 5 compatible.
+                    Add-Type -Language 'CSharp' -TypeDefinition @'
 using System;
 using System.IO;
 
@@ -219,30 +222,36 @@ namespace MsalEssentials
     }
 }
 '@
+                }
+
+                $tokenFileReader   = [MsalEssentials.FederatedTokenFileReader]::new($federatedTokenPath)
+                $assertionDelegate = [System.Delegate]::CreateDelegate(
+                    [System.Func[string]],
+                    $tokenFileReader,
+                    [MsalEssentials.FederatedTokenFileReader].GetMethod('Read')
+                )
+                $clientBuilder = $clientBuilder.WithClientAssertion([System.Func[string]]$assertionDelegate)
             }
 
-            $tokenFileReader   = [MsalEssentials.FederatedTokenFileReader]::new($federatedTokenPath)
-            $assertionDelegate = [System.Delegate]::CreateDelegate(
-                [System.Func[string]],
-                $tokenFileReader,
-                [MsalEssentials.FederatedTokenFileReader].GetMethod('Read')
-            )
-            $clientBuilder = $clientBuilder.WithClientAssertion([System.Func[string]]$assertionDelegate)
-        }
-        else {
-            # MSAL only accepts the secret as a string. Keep the plain text
-            # only as long as the builder needs it, and wipe the unmanaged copy.
-            $secretPointer = [System.IntPtr]::Zero
-            try {
-                $secretPointer = [System.Runtime.InteropServices.Marshal]::SecureStringToGlobalAllocUnicode($ClientSecret)
-                $clientBuilder = $clientBuilder.WithClientSecret(
-                    [System.Runtime.InteropServices.Marshal]::PtrToStringUni($secretPointer)
-                )
-            }
-            finally {
-                if ($secretPointer -ne [System.IntPtr]::Zero) {
-                    [System.Runtime.InteropServices.Marshal]::ZeroFreeGlobalAllocUnicode($secretPointer)
+            'Secret' {
+                # MSAL only accepts the secret as a string. Keep the plain text
+                # only as long as the builder needs it, and wipe the unmanaged copy.
+                $secretPointer = [System.IntPtr]::Zero
+                try {
+                    $secretPointer = [System.Runtime.InteropServices.Marshal]::SecureStringToGlobalAllocUnicode($ClientSecret)
+                    $clientBuilder = $clientBuilder.WithClientSecret(
+                        [System.Runtime.InteropServices.Marshal]::PtrToStringUni($secretPointer)
+                    )
                 }
+                finally {
+                    if ($secretPointer -ne [System.IntPtr]::Zero) {
+                        [System.Runtime.InteropServices.Marshal]::ZeroFreeGlobalAllocUnicode($secretPointer)
+                    }
+                }
+            }
+
+            default {
+                throw ('Unknown parameter set: {0}' -f $PSCmdlet.ParameterSetName)
             }
         }
 

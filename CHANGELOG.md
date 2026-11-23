@@ -8,17 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [\[Unreleased\]](#unreleased)
   - [Added](#added)
+  - [Changed](#changed)
 - [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
   - [TL;DR](#tldr)
   - [Added](#added-1)
 - [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
   - [Added](#added-2)
-  - [Changed](#changed)
+  - [Changed](#changed-1)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
   - [TL;DR](#tldr-1)
   - [Added](#added-3)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
-  - [Changed](#changed-1)
+  - [Changed](#changed-2)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr-2)
   - [Added](#added-4)
@@ -26,9 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-3)
   - [Added](#added-5)
-  - [Changed](#changed-2)
-- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-3)
+- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
+  - [Changed](#changed-4)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-4)
   - [Added](#added-6)
@@ -52,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**
   - New example [Application sign-in with workload identity federation](docs/examples/Application-WorkloadIdentityFederation.md): the federated credential for GitHub Actions and Kubernetes, a GitHub Actions workflow that gets the job's OIDC token and lists users from Microsoft Graph, the token file variant and the common errors.
   - The README explains the setup under **App registration**, and `docs/notes/Auth-Types.md` marks workload identity federation as done.
+
+### Changed
+
+- `Get-MsalEssentialsApplicationToken` picks the credential (certificate, secret, federated token or token file) with a `switch` on the parameter set instead of an `if`/`elseif` chain, and throws on an unknown parameter set instead of falling through to the secret. No change in behavior.
 
 ## [1.4.0] - 2026-11-16
 
