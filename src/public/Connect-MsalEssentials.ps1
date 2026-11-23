@@ -474,6 +474,7 @@ function Connect-MsalEssentials {
                 'AppSecret'             { $tokenParameters['ClientSecret']       = $ClientSecret }
                 'AppFederatedToken'     { $tokenParameters['FederatedToken']     = $FederatedToken }
                 'AppFederatedTokenFile' { $tokenParameters['FederatedTokenFile'] = $FederatedTokenFile }
+                default                 { throw ('Unknown parameter set: {0}' -f $PSCmdlet.ParameterSetName) }
             }
 
             $authenticationType = 'Application'
@@ -513,6 +514,10 @@ function Connect-MsalEssentials {
         # Future parameter sets go here, each setting $authenticationResult,
         # $authenticationType and $requestedScopes the same way:
         #   'AccessToken'     -> use an access token that was obtained elsewhere
+
+        default {
+            throw ('Unknown parameter set: {0}' -f $PSCmdlet.ParameterSetName)
+        }
     }
 
     if (-not $authenticationResult -or [string]::IsNullOrEmpty($authenticationResult.AccessToken)) {

@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `Get-MsalEssentialsApplicationToken` picks the credential (certificate, secret, federated token or token file) with a `switch` on the parameter set instead of an `if`/`elseif` chain, and throws on an unknown parameter set instead of falling through to the secret. No change in behavior.
+- `Connect-MsalEssentials` throws on an unknown parameter set in both of its `switch` statements, so a new parameter set without its own branch fails at once with a clear message instead of later with "no access token was returned" or a missing credential. No change in behavior for the existing parameter sets.
 
 ## [1.4.0] - 2026-11-16
 
