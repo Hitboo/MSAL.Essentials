@@ -6,21 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents<!-- omit from toc -->
 
+- [\[Unreleased\]](#unreleased)
+  - [Changed](#changed)
 - [\[1.5.0\] - 2026-11-23](#150---2026-11-23)
   - [TL;DR](#tldr)
   - [Added](#added)
-  - [Changed](#changed)
+  - [Changed](#changed-1)
 - [\[1.4.0\] - 2026-11-16](#140---2026-11-16)
   - [TL;DR](#tldr-1)
   - [Added](#added-1)
 - [\[1.3.1\] - 2026-11-10](#131---2026-11-10)
   - [Added](#added-2)
-  - [Changed](#changed-1)
+  - [Changed](#changed-2)
 - [\[1.3.0\] - 2026-11-08](#130---2026-11-08)
   - [TL;DR](#tldr-2)
   - [Added](#added-3)
 - [\[1.2.2\] - 2026-11-04](#122---2026-11-04)
-  - [Changed](#changed-2)
+  - [Changed](#changed-3)
 - [\[1.2.1\] - 2026-11-02](#121---2026-11-02)
   - [TL;DR](#tldr-3)
   - [Added](#added-4)
@@ -28,9 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [\[1.2.0\] - 2026-10-24](#120---2026-10-24)
   - [TL;DR](#tldr-4)
   - [Added](#added-5)
-  - [Changed](#changed-3)
-- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
   - [Changed](#changed-4)
+- [\[1.1.1\] - 2026-10-23](#111---2026-10-23)
+  - [Changed](#changed-5)
 - [\[1.1.0\] - 2026-10-20](#110---2026-10-20)
   - [TL;DR](#tldr-5)
   - [Added](#added-6)
@@ -38,6 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [\[1.0.0\] - 2026-10-16](#100---2026-10-16)
   - [TL;DR](#tldr-6)
   - [Added](#added-7)
+
+## [Unreleased]
+
+### Changed
+
+- **Documentation**
+  - `docs/notes/Microsoft.Identity.Client-dependency.md` names 4.92.0 as the current MSAL.NET version, the one bundled in `src/lib`, instead of 4.90.1. Its direct dependencies are unchanged.
 
 ## [1.5.0] - 2026-11-23
 

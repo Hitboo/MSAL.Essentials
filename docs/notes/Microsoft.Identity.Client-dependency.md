@@ -1,6 +1,6 @@
 # Microsoft.Identity.Client - dependency notes
 
-> **Current version:** 4.90.1, published on NuGet **2026-09-25** (checked 2026-10-06).  
+> **Current version:** 4.92.0, published on NuGet **2026-10-29** (checked 2026-11-24). This is the version bundled in `src/lib`.  
 > Supported versions: 4.77.1 and newer. Older versions are unsupported.
 > Source: <https://www.nuget.org/packages/Microsoft.Identity.Client>
 
@@ -11,9 +11,9 @@
 | Older than 4.45.0 | Not verified per target framework. Some older versions list `Microsoft.CSharp` on certain targets. |
 | **4.45.0** | `Microsoft.IdentityModel.Abstractions` (6.18.0) added for the net45 and net461 targets. The `netstandard2.0` target also lists `Microsoft.CSharp` 4.5.0. |
 | Later 4.x | `System.Text.Json`, `System.Diagnostics.DiagnosticSource` and `System.Formats.Asn1` were added. *The exact version was not verified.* |
-| **4.90.1 (current)** | See the per-target table below. |
+| **4.92.0 (current)** | See the per-target table below. The direct dependencies are the same as in 4.90.1. |
 
-### Direct dependencies of 4.90.1, per target
+### Direct dependencies of 4.92.0, per target
 
 The targets differ, so the lists are **not** identical across frameworks.
 
